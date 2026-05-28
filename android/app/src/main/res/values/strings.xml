@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Cluck Norris</string>
+    <string name="title_activity_main">Cluck Norris</string>
+    <string name="package_name">vip.clucknorris.app</string>
+    <string name="custom_url_scheme">vip.clucknorris.app</string>
+</resources>

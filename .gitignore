@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+
+# Build output (Vite)
+dist/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Env / secrets
+.env
+.env.local
+.env.*.local
+
+# Signing keystores & signing config — NEVER commit (dApp Store key)
+*.keystore
+*.jks
+keystore.properties
+key.properties
+
+# Android / Capacitor native build artifacts
+android/.gradle/
+android/app/build/
+android/build/
+android/captures/
+android/.idea/
+android/local.properties
+*.iml
+
+# Internal docs — keep strategy/brainstorm notes out of the repo
+STRATEGY.md
+
+# Local Claude Code config (machine-specific, keep private)
+.claude/
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
+*.swp
