@@ -79,7 +79,8 @@ release:
       uri: ./screenshots/05-survival.png    # Crypto Survival Simulator
     - purpose: screenshot
       uri: ./screenshots/06-bags.png        # live Bags.fm launch feed
-    # Optional 7th: ./screenshots/07-lesson-wallet.png ("What is a Wallet?" lesson)
+    - purpose: screenshot
+      uri: ./screenshots/07-lesson-wallet.png  # "What is a Wallet?" lesson
   files:
     # TODO: copy the signed release APK here (or point to its build path) at submission time
     - purpose: install
