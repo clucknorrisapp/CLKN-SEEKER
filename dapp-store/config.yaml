@@ -1,0 +1,86 @@
+# Solana dApp Store publishing config — DRAFT
+# Consolidates the approved listing copy + assets. Field names follow the
+# Solana Mobile publishing schema, but VALIDATE/FINALIZE against the dapp-store
+# CLI in Phase C (e.g. `npx dapp-store ...`) before submitting. TODOs marked below.
+
+publisher:
+  name: Cluck Norris
+  website: https://clucknorris.app
+  email: clucknorrisapp@gmail.com
+  media:
+    - purpose: icon
+      uri: ./icon.png
+
+app:
+  name: Cluck Norris - Crypto School and Tools
+  android_package: vip.clucknorris.app
+  urls:
+    license_url: https://clucknorris.app
+    copyright_url: https://clucknorris.app
+    # TODO: /privacy page does not exist yet — needs adding on the public site
+    privacy_policy_url: https://clucknorris.app/privacy
+    website: https://clucknorris.app
+  media:
+    - purpose: icon
+      uri: ./icon.png
+
+release:
+  catalog:
+    en-US:
+      name: Cluck Norris - Crypto School and Tools
+      # NOTE: trim if the CLI enforces a shorter limit (fallback: "Free crypto school + token tools")
+      short_description: Free crypto school + Solana token-safety tools
+      long_description: |
+        "No participation trophies. No hand-holding. Just hard knocks."
+
+        Cluck Norris is a free school of crypto hard knocks plus a suite of
+        Solana token-research tools — built to keep first-timers alive long
+        enough to actually use crypto.
+
+        FREE SCHOOL, FOREVER — no signup, no wallet:
+        - The Incubator: 7 beginner lessons (wallets, tokens, on/off-ramps, DEXs, liquidity)
+        - School of Hard Knocks: 12 lessons, Freshman to Emeritus belt ranking
+        - The Ultimate Challenge: 50-question exam, scored server-side, 94% to pass
+        - Survival Simulator: practice real crypto decisions with simulated capital
+        - LP Lab: a 12-lesson liquidity course with 7 interactive tools
+        - Ask Cluck: a tough-love AI crypto professor in every lesson
+
+        FREE TOKEN RESEARCH for any Solana mint:
+        - Cluck Score: a 0-100 token-health score (Token-2022 honeypot-aware)
+        - Token Autopsy: an AI forensic post-mortem on any mint
+        - Wallet Safety Checkup: read-only scan for approvals, honeypots, freeze/mint risk
+        - Live Bags.fm launch feed: every new launch, real-time prices, trade links
+
+        PREMIUM OPERATOR TOOLS paid in CLKN micropayments (no wallet-connect,
+        no subscription): batch airdrop sender, buy-competition trackers,
+        deep-forensics tier.
+
+        Guardrails first — every paid action requires an "I understand" step,
+        every page shows a stay-safe checklist, and the app never takes custody
+        or asks for your seed phrase.
+      new_in_version: Initial release — the full Cluck Norris school and Solana token toolkit, now native on Solana Mobile.
+  media:
+    - purpose: icon
+      uri: ./icon.png
+    - purpose: banner
+      uri: ./banner.png
+    # TODO: add 4-6 screenshots captured from the emulator/Appetize, e.g.:
+    # - purpose: screenshot
+    #   uri: ./screenshots/01-home.png
+    # - purpose: screenshot
+    #   uri: ./screenshots/02-bags-feed.png
+  files:
+    # TODO: copy the signed release APK here (or point to its build path) at submission time
+    - purpose: install
+      uri: ./app-release.apk
+
+solana_mobile_dapp_publisher_portal:
+  # google_store_package: omitted — not published on Google Play
+  testing_instructions: |
+    No account, login, or wallet connection is required. Open the app and the
+    School, Library, Survival Simulator, LP Lab, and all free token tools
+    (/score, /autopsy, /wallet-checkup, the live Bags feed) are fully usable
+    immediately. Premium tools show free educational content and only require a
+    small one-time CLKN token payment to unlock the action — there is no fiat
+    payment and no wallet-connect. The app is a thin client that loads the live
+    clucknorris.app site, so an internet connection is required.
