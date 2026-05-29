@@ -64,11 +64,22 @@ release:
       uri: ./icon.png
     - purpose: banner
       uri: ./banner.png
-    # TODO: add 4-6 screenshots captured from the emulator/Appetize, e.g.:
-    # - purpose: screenshot
-    #   uri: ./screenshots/01-home.png
-    # - purpose: screenshot
-    #   uri: ./screenshots/02-bags-feed.png
+    # Screenshots captured from the Android build (Appetize). PNG files still
+    # need to be placed in ./screenshots/ — see README/notes. Order below is the
+    # intended listing order.
+    - purpose: screenshot
+      uri: ./screenshots/01-home.png        # landing hero: brand + live stats
+    - purpose: screenshot
+      uri: ./screenshots/02-school.png      # school home: ranks, Start School, Ultimate Challenge
+    - purpose: screenshot
+      uri: ./screenshots/03-lp-lab.png      # LP Lab lessons
+    - purpose: screenshot
+      uri: ./screenshots/04-tools.png       # Tools: Cluck Score, Security Coop, Wallet Checkup, Hatchery
+    - purpose: screenshot
+      uri: ./screenshots/05-survival.png    # Crypto Survival Simulator
+    - purpose: screenshot
+      uri: ./screenshots/06-bags.png        # live Bags.fm launch feed
+    # Optional 7th: ./screenshots/07-lesson-wallet.png ("What is a Wallet?" lesson)
   files:
     # TODO: copy the signed release APK here (or point to its build path) at submission time
     - purpose: install
