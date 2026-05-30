@@ -7,10 +7,10 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "vip.clucknorris.app"
+    namespace = "app.clucknorris.school"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "vip.clucknorris.app"
+        applicationId "app.clucknorris.school"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

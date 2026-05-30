@@ -1,4 +1,4 @@
-package vip.clucknorris.app;
+package app.clucknorris.school;
 
 import com.getcapacitor.BridgeActivity;
 

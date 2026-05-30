@@ -13,7 +13,7 @@ publisher:
 
 app:
   name: Cluck Norris
-  android_package: vip.clucknorris.app
+  android_package: app.clucknorris.school
   urls:
     license_url: https://clucknorris.app
     copyright_url: https://clucknorris.app

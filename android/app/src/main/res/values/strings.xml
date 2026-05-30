@@ -2,6 +2,6 @@
 <resources>
     <string name="app_name">Cluck Norris</string>
     <string name="title_activity_main">Cluck Norris</string>
-    <string name="package_name">vip.clucknorris.app</string>
-    <string name="custom_url_scheme">vip.clucknorris.app</string>
+    <string name="package_name">app.clucknorris.school</string>
+    <string name="custom_url_scheme">app.clucknorris.school</string>
 </resources>
