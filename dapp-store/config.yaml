@@ -12,7 +12,7 @@ publisher:
       uri: ./icon.png
 
 app:
-  name: Cluck Norris - Crypto School and Tools
+  name: Cluck Norris
   android_package: vip.clucknorris.app
   urls:
     license_url: https://clucknorris.app
@@ -27,7 +27,8 @@ app:
 release:
   catalog:
     en-US:
-      name: Cluck Norris - Crypto School and Tools
+      name: Cluck Norris
+      subtitle: Crypto School and Tools
       # NOTE: trim if the CLI enforces a shorter limit (fallback: "Free crypto school + token tools")
       short_description: Free crypto school + Solana token-safety tools
       long_description: |
