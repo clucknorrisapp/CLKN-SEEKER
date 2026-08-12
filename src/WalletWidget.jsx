@@ -5,8 +5,10 @@
 //   1) "Connect Wallet" button that triggers MWA (Seed Vault on the Seeker,
 //      Phantom/Solflare/Backpack on other Android phones).
 //   2) Once connected, shows the truncated address + the wallet's CLKN balance.
-//   3) Demos signMessage with a "Verify wallet ownership" button — the same
-//      flow you'd use to prove a wallet owns a transcript without spending SOL.
+//   3) A holder gate: "Unlock Holder Access" runs the sign→verify→balance
+//      round-trip (useHolderGate) — the server proves ownership + checks the
+//      on-chain CLKN balance and unlocks premium tools for CLKN holders.
+//      (CLKN payments are offline; holding CLKN is now how you unlock.)
 //
 // Visual style matches the existing app (Oswald + #FCD34D / #D97706 gold,
 // dark cards, sharp letter-spacing).
@@ -16,6 +18,7 @@ import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { PublicKey } from "@solana/web3.js";
 import { getAssociatedTokenAddress, getAccount } from "@solana/spl-token";
+import { useHolderGate } from "./useHolderGate.js";
 
 const CLKN_MINT = new PublicKey("DW6DF2mjtyx67vcNmMhFm9XdxAwREurorghZcS3CBAGS");
 // CLKN is launched on Bags.fm; tokens minted there use 6 decimals.
@@ -94,8 +97,7 @@ export function WalletWidget({ compact = false }) {
 
   const [clknBalance, setClknBalance] = useState(null);
   const [balanceLoading, setBalanceLoading] = useState(false);
-  const [verifyStatus, setVerifyStatus] = useState("idle"); // idle | signing | verified | failed
-  const [verifyError, setVerifyError] = useState(null);
+  const gate = useHolderGate(); // sign → verify → on-chain balance → unlock
 
   // Fetch CLKN balance for the connected wallet
   useEffect(() => {
@@ -127,28 +129,8 @@ export function WalletWidget({ compact = false }) {
 
   const handleConnect = useCallback(() => setVisible(true), [setVisible]);
 
-  const handleVerify = useCallback(async () => {
-    if (!publicKey || !signMessage) return;
-    try {
-      setVerifyStatus("signing");
-      setVerifyError(null);
-      const nonce = Math.random().toString(36).slice(2);
-      const message = `Cluck Norris wallet verification\nWallet: ${publicKey.toBase58()}\nNonce: ${nonce}\nIssued: ${new Date().toISOString()}`;
-      const encoded = new TextEncoder().encode(message);
-      const sig = await signMessage(encoded);
-      // In production this signature + message + nonce go to /api/verify-wallet
-      // to be checked server-side with @solana/web3.js nacl.sign.detached.verify.
-      console.log("[Cluck] message:", message);
-      console.log(
-        "[Cluck] signature (base64):",
-        btoa(String.fromCharCode(...sig))
-      );
-      setVerifyStatus("verified");
-    } catch (e) {
-      setVerifyStatus("failed");
-      setVerifyError(e?.message || String(e));
-    }
-  }, [publicKey, signMessage]);
+  // Holder-gate flow lives in useHolderGate() (challenge → sign → verify →
+  // on-chain balance → unlock). `gate.run` triggers it; `gate.status` drives UI.
 
   // Not connected → just the connect button
   if (!connected) {
@@ -229,46 +211,48 @@ export function WalletWidget({ compact = false }) {
 
       <div>
         <button
-          onClick={handleVerify}
-          disabled={verifyStatus === "signing"}
+          onClick={gate.run}
+          disabled={gate.status === "working"}
           style={{
             ...STYLE.buttonGhost,
-            opacity: verifyStatus === "signing" ? 0.6 : 1,
-            cursor: verifyStatus === "signing" ? "wait" : "pointer",
+            opacity: gate.status === "working" ? 0.6 : 1,
+            cursor: gate.status === "working" ? "wait" : "pointer",
           }}
         >
-          {verifyStatus === "signing"
+          {gate.status === "working"
             ? "AWAITING WALLET…"
-            : verifyStatus === "verified"
-            ? "✓ VERIFIED — SIGNATURE IN CONSOLE"
-            : verifyStatus === "failed"
+            : gate.status === "unlocked"
+            ? "✓ HOLDER ACCESS UNLOCKED"
+            : gate.status === "not-holder"
+            ? "↻ RE-CHECK HOLDER STATUS"
+            : gate.status === "error"
             ? "✗ VERIFICATION FAILED — RETRY"
-            : "VERIFY WALLET OWNERSHIP"}
+            : "🔓 UNLOCK HOLDER ACCESS"}
         </button>
-        {verifyStatus === "failed" && verifyError && (
-          <div
-            style={{
-              marginTop: 8,
-              fontSize: 11,
-              color: "#EF4444",
-              lineHeight: 1.5,
-            }}
-          >
-            {verifyError}
+
+        {gate.status === "error" && gate.error && (
+          <div style={{ marginTop: 8, fontSize: 11, color: "#EF4444", lineHeight: 1.5 }}>
+            {gate.error}
           </div>
         )}
-        {verifyStatus === "verified" && (
-          <div
-            style={{
-              marginTop: 8,
-              fontSize: 11,
-              color: "#9CA3AF",
-              lineHeight: 1.5,
-            }}
-          >
-            Server would now POST the signed message to{" "}
-            <code style={{ color: "#FCD34D" }}>/api/verify-wallet</code> and
-            confirm ownership server-side. Spends zero SOL.
+
+        {gate.status === "unlocked" && (
+          <div style={{ marginTop: 8, fontSize: 11, color: "#6EE7B7", lineHeight: 1.5 }}>
+            Wallet verified on-chain and holds{" "}
+            <strong>{formatClkn(String(Math.round(gate.balance * 10 ** CLKN_DECIMALS)))}</strong>{" "}
+            CLKN (≥ {gate.threshold?.toLocaleString()}). Premium tools unlocked
+            for this session — no payment required.
+          </div>
+        )}
+
+        {gate.status === "not-holder" && (
+          <div style={{ marginTop: 8, fontSize: 11, color: "#9CA3AF", lineHeight: 1.5 }}>
+            Verified — but this wallet holds{" "}
+            <strong style={{ color: "#FCD34D" }}>
+              {gate.balance?.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            </strong>{" "}
+            CLKN, below the {gate.threshold?.toLocaleString()} holder threshold.
+            The full school and free tools remain available to everyone.
           </div>
         )}
       </div>
