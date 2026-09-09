@@ -23,25 +23,33 @@ You already have:
 
 ---
 
-## PHASE 1 ⟲ — Google Play developer account (START TODAY; slowest track)
+## PHASE 1 ⟲ — Google Play ORGANIZATION account (START TODAY; slowest track)
 
-**1.1 — Get a DUNS number for CLKN Productions LLC**
-- Go to **dnb.com** → search for a free DUNS number.
-- Enter the LLC's legal name, address, etc. exactly as on the LLC paperwork.
-- **✅ Done when:** you receive a 9-digit DUNS number by email (takes **1–30 days** — this is why you start now).
-- **⚠️** Use the LLC's exact legal name and address; a mismatch with Google's records later causes verification delays.
+**1.1 — DUNS number for CLKN Productions LLC — APPLIED ✅ (waiting on issuance)**
+- Applied at **dnb.com** (free). You need the 9-digit number *in hand* to finish org verification (1.4).
+- **⚠️** The legal name + address you gave D&B must match what you enter in Google **character-for-character**.
+- Issuance takes ~1–30 days — the reason this phase started first.
 
-**1.2 — Create the Google Play Console account as an ORGANIZATION**
-- Go to **play.google.com/console**, sign in with the account you want to own this (consider a dedicated `clucknorrisapp@gmail.com`, not personal).
-- Choose account type **Organization / Business** (NOT personal).
-- Pay the **one-time $25** fee.
-- Enter the LLC details + DUNS number.
-- **✅ Done when:** the account shows "Organization" and identity verification is submitted.
-- **⚠️ Choosing Organization is what exempts you from the 12-tester / 14-day rule and puts "CLKN Productions LLC" as the public developer name instead of your personal name.** Do not pick Personal to save time — you'll regret both.
+**1.2 — Prep before signup (do while the DUNS processes)**
+- **Owner Google account:** use a dedicated one (`clucknorrisapp@gmail.com`), **NOT** a personal account. **Turn on 2FA first** — whoever controls this account controls the Play account forever.
+- **Domain email:** set up `support@clucknorris.app` (or similar). Google's org verification prefers an email at your domain over gmail — and Apple will want the same later.
+- **Business info** matching the DUNS record: legal name `CLKN Productions LLC`, address, phone, website `https://clucknorris.app`.
+- A **card** for the $25 fee.
 
-**1.3 — Complete Google's identity + payments verification**
-- Google will ask for LLC documents and possibly a verification of you as an authorized rep. Upload what they ask.
-- **✅ Done when:** account status is "verified" (can take a few days).
+**1.3 — Create the account as an ORGANIZATION**
+- Go to **play.google.com/console/signup**, sign in with the owner account.
+- Account type → **"An organization or business"** (NOT "Yourself").
+- Enter the organization details (matching the DUNS record) + the **D-U-N-S number**.
+- Confirm your details as the **authorized representative**.
+- Pay the **one-time $25**.
+- Accept the **Developer Distribution Agreement**.
+- **✅ Done when:** account created and verification submitted.
+- **⚠️ Organization (not Individual) is what exempts you from the 12-tester/14-day rule AND shows "CLKN Productions LLC" as the public developer name instead of your personal name. You cannot change this later without a new account.**
+
+**1.4 — Complete org + identity verification**
+- Google verifies the org against the D-U-N-S record and your identity as the rep (email/phone confirmation, sometimes a document request). Respond promptly.
+- **✅ Done when:** account status shows **verified** (a few days to ~2 weeks; gated on the DUNS being issued).
+- **⚠️ Don't create the app listing until verified** — you can start filling it in, but it can't go live unverified.
 
 ---
 
