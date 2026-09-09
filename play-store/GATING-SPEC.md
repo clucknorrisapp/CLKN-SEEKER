@@ -1,5 +1,20 @@
 # Main-Session Gating Spec — make the live site render `play` / `ios` modes
 
+> ## ⚠️ SUPERSEDED MECHANISM — read this first
+> This spec originally implemented store modes by **hiding features on the live site**
+> (a `?app=play` / User-Agent flag + server 404s). Per the agreed architecture
+> (Codex's guidance), that is **not** how we ship the store editions: a client flag is
+> not an authorization boundary, and a routine website change could leak an excluded
+> flow into an already-reviewed store app.
+>
+> **The store editions are now built as a separate, allow-listed frontend**, defined by
+> **`STORE-EDITION-MANIFEST.md`** — excluded flows are **absent from the build**, not hidden.
+>
+> Keep only: (1) the **server-side route refusal** in Part 3 as *defense-in-depth* — any
+> endpoint the store edition must never reach (payments, mint/burn/lock/send, buy) should
+> refuse store-edition callers; and (2) the verification discipline. **Ignore the
+> "hide on the live site" mechanism in Parts 1–2 and build from the MANIFEST instead.**
+
 **Paste this whole file into the session working on the public `cluck-norris-school` repo.**
 
 ## Context
