@@ -15,6 +15,33 @@ enough because reviewers type URLs directly.
 
 ---
 
+## ⚠️ FIRST — the live code has drifted; audit against it
+This spec's specific code anchors were mapped from a **May 2026 snapshot**. The
+live `clucknorris.app` has changed since. A fetch of the live site (2026-09-09)
+shows:
+
+**Already gone — no gating needed:** the Bags.fm live feed, the Jupiter buy
+widget, the slots feature, on-page token price/market-cap.
+
+**Present now — the REAL surfaces to gate for play/ios:**
+- **"Buy CLKN" button** (nav + anywhere) → `tokenPromo`
+- **"Coinbase" buy link** (nav) → `tokenPromo`
+- **"Investors" link** (+ any grant page/badge still present) → `hackathon`
+- Any remaining **airdrop / transcript wallet-address** collection → `airdropClaim`
+
+**New tools since May — review each:** the site now has **Wallet X-Ray, Holders,
+Trace** (read-only research → keep in all modes) and **Firepit (burn tokens)** +
+**Jup Locker Room (token locking)**, which perform **on-chain transactions** and
+need a connected wallet. Put Firepit + Jup Locker behind **`walletConnect`** so
+they're **hidden on iOS** (Apple 3.1.1 allows no wallet). On Google they're fine
+(user-initiated wallet action, not an in-app purchase) → keep them in `play`.
+
+**Bottom line:** trust the *feature-flag model* and the *server middleware* below,
+but **locate the CURRENT components/routes yourself** — the specific names and line
+numbers in Parts 2–3 are from the old snapshot and several have changed or vanished.
+
+---
+
 ## Part 1 — Add `src/store-mode.jsx` and wrap the app
 
 Create `src/store-mode.jsx` with EXACTLY this content (it's already written and
@@ -105,15 +132,18 @@ Import once: `import { useStoreMode, FeatureGate } from "./store-mode.jsx";`
 Then wrap each surface below so it only renders when its flag is on. Everything is
 `true` in `full`, so the live Seeker app is unchanged.
 
-| Wrap this | Flag | Where to find it |
-|---|---|---|
-| The **BAGS nav tab** + the live Bags feed link/section | `bagsFeed` | nav tabs array; the "BAGS" tab |
-| The **`JupiterSwapButton`** (buy-CLKN widget) everywhere it's used | `tokenPromo` | `JupiterSwapButton` component + call sites |
-| **"Buy CLKN" / trade buttons & links** | `tokenPromo` | `CLKN_TRADE_LINK`, `JUPITER_TRADE_LINK`, `PARTNER_LINK`, `BAGS_SIGNUP` |
-| **CLKN price / market-cap / promo banners** | `tokenPromo` | any live-price or "buy the bird" UI |
-| **Airdrop / transcript-claim wallet-address form** | `airdropClaim` | the `/api/claim` form; the "drop your Solana address" step |
-| **Grant / investor links & badges** | `hackathon` | links to `/grant`, `/investors`, any hackathon badge |
-| **Holder-gate / WalletWidget / advanced-tool entries** | `advancedTools` (and `walletConnect`) | hidden in `ios`; kept in `play` |
+Gate the surfaces that are actually in the CURRENT code (see the audit above):
+
+| Wrap this (find it in current code) | Flag |
+|---|---|
+| **"Buy CLKN" button/link** (nav + anywhere) | `tokenPromo` |
+| **"Coinbase" buy link** (nav) | `tokenPromo` |
+| Any **token price / market-cap / "buy the bird"** UI, if present | `tokenPromo` |
+| **"Investors" link** + any **grant** page/badge | `hackathon` |
+| Any **airdrop / transcript wallet-address collection** still present | `airdropClaim` |
+| **Firepit (burn)** and **Jup Locker Room (lock)** — wallet-transaction tools | `walletConnect` (→ hidden on iOS, kept on play) |
+| **Holder-gate / WalletWidget / advanced-tool entries** (when added) | `advancedTools` + `walletConnect` (hidden on iOS) |
+| ~~Bags feed, slots, Jupiter widget~~ | already removed — no action |
 
 Two patterns, use either:
 ```jsx
