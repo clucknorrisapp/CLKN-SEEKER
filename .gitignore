@@ -16,8 +16,8 @@ npm-debug.log*
 # Signing keystores & signing config — NEVER commit (dApp Store key)
 *.keystore
 *.jks
-keystore.properties
-key.properties
+keystore*.properties
+key*.properties
 
 # Android / Capacitor native build artifacts
 android/.gradle/
