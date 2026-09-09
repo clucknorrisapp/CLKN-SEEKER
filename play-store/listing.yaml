@@ -1,0 +1,101 @@
+# Google Play listing package — STRIPPED Cluck Norris build ("play" mode).
+# Publisher: CLKN Productions LLC.  Package: app.clucknorris.edu.
+# This build EXCLUDES (via store-mode "play"): Bags.fm feed, airdrop/claim,
+# buy-CLKN / token promo, hackathon & grant surfaces, slots, CLKN payments.
+# It KEEPS: the school, the library, the free research tools, and (in-app,
+# not promoted here) the CLKN-holder gate for advanced tools.
+#
+# NOTE: this listing copy is deliberately education-forward and mentions NO
+# token, purchase, airdrop, or investment language — Google's crypto policy
+# dislikes token promotion, and none of it is needed to sell the app.
+
+store_listing:
+  # Play title max 30 chars; short_description max 80; full_description max 4000.
+  title: "Cluck Norris: Crypto School"          # 27 chars
+  short_description: "A free, no-hype crypto school. Learn wallets, DeFi, and how not to get rekt."  # 75 chars
+  full_description: |
+    "No participation trophies. No hand-holding. Just hard knocks."
+
+    Cluck Norris is a free crypto school built to keep beginners alive long
+    enough to actually understand crypto — before it teaches them the hard way.
+
+    FREE SCHOOL — no signup, no wallet required:
+    - The Incubator: beginner lessons on wallets, tokens, on/off-ramps, DEXs, and liquidity
+    - School of Hard Knocks: progressive lessons with a Freshman-to-Emeritus belt ranking
+    - The Ultimate Challenge: a 50-question exam, scored server-side, 94% to pass
+    - Survival Simulator: practice real crypto decisions with simulated money, zero risk
+    - LP Lab: a hands-on liquidity course with interactive calculators
+    - Ask Cluck: a tough-love AI crypto tutor built into every lesson
+
+    FREE SAFETY TOOLS for any Solana token or wallet:
+    - Cluck Score: a 0-100 token-health read (honeypot-aware)
+    - Token Autopsy: an AI forensic breakdown of any token
+    - Wallet Safety Checkup: scan any address for lingering approvals, honeypots, and freeze/mint risk
+
+    Guardrails first: the app never takes custody, never asks for your seed
+    phrase, and shows a stay-safe checklist on every action. Learn the game
+    before it costs you.
+
+  category: "Education"
+  contact_email: "clucknorrisapp@gmail.com"
+  website: "https://clucknorris.app"
+  privacy_policy: "https://clucknorris.app/privacy"
+  # Play does not surface a Terms field the way the dApp Store does, but keep
+  # https://clucknorris.app/terms linked from the in-app footer.
+
+assets:
+  icon: "./icon.png"                        # 512x512 (reused from the dApp Store package)
+  feature_graphic: "./feature-graphic.png"  # 1024x500 (Play spec)
+  screenshots: "TODO — capture >=2 PHONE screenshots of the STRIPPED build once store-mode play is deployed; do NOT reuse the dApp Store shots (they show Bags feed / full app)."
+
+release:
+  package_name: "app.clucknorris.edu"
+  target_sdk: 36
+  min_sdk: 24
+  artifact: "Android App Bundle (.aab), signed with the clkn-edu upload key; use Google Play App Signing."
+  whats_new: "Initial release — the free Cluck Norris crypto school, now on Google Play."
+
+# ── Data Safety form (MANDATORY on Play) — DRAFT, verify each answer ────────
+# Answer honestly against the actual stripped-build runtime before submitting.
+data_safety:
+  collects_or_shares_data: true
+  data_types:
+    - type: "App activity — page views / product interaction"
+      collected: true
+      purpose: "Analytics"
+      shared_with_third_parties: false
+      user_can_request_deletion: true
+      optional: false
+    - type: "Solana wallet address"
+      collected: true
+      purpose: "App functionality (holder verification for advanced tools)"
+      shared_with_third_parties: false
+      optional: true
+      note: "Public on-chain address only; used to read CLKN balance. No private keys, no seed phrase, no custody, no payment credentials."
+    - type: "Token/wallet addresses pasted into research tools"
+      collected: true
+      purpose: "App functionality (on-chain lookup to generate the report)"
+      shared_with_third_parties: true
+      shared_with: "on-chain data providers (RPC / Solscan-class APIs) to perform the lookup"
+      optional: true
+      note: "Public blockchain identifiers, not tied to user identity."
+  security_practices:
+    encrypted_in_transit: true            # all traffic is HTTPS
+    users_can_request_deletion: true      # via clucknorrisapp@gmail.com
+    committed_to_play_families_policy: false
+  data_NOT_collected:
+    - "Name, email, phone number"
+    - "Precise or approximate location"
+    - "Contacts, photos, files"
+    - "Payment or financial account info (no in-app purchases; no card/bank data)"
+    - "Private keys / seed phrases (never requested)"
+
+# ── Content rating questionnaire notes ─────────────────────────────────────
+content_rating:
+  suggested_category: "Reference / Education"
+  answer_honestly:
+    - "No gambling / simulated gambling (slots were dropped from this build)."
+    - "No real-money transactions, no in-app purchases."
+    - "No user-generated content / social features."
+    - "Mascot art depicts a cartoon character holding a stylized stick of dynamite and an ammo bandolier — stylized brand art, not realistic violence. Disclose it; it may nudge the age rating slightly."
+    - "References cryptocurrency/finance concepts (educational)."
