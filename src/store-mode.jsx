@@ -28,6 +28,14 @@ const SESSION_KEY = "clkn-store-mode";
 const COOKIE_KEY = "clkn-store-mode";
 const VALID_MODES = ["full", "play", "ios"];
 
+// Native store wrappers append one of these markers to the WebView User-Agent
+// (capacitor.config.ts → android.appendUserAgent / ios.appendUserAgent). This
+// is the PRIMARY mode signal for store builds: unlike a URL param it rides on
+// every HTTP request, so server.js can read the same User-Agent header and gate
+// routes reliably across full-page navigations, with no cookie needed. The
+// Seeker (dApp Store) wrapper sets no marker → stays "full".
+const UA_MARKERS = { ClucknorrisPlay: "play", ClucknorrisIOS: "ios" };
+
 // ── Feature flags per tier ────────────────────────────────────────────────
 // Add a flag here, then gate UI with `const { features } = useStoreMode()` and
 // `{features.someFlag && <Thing/>}`. Everything true in "full" so the Seeker
@@ -98,12 +106,22 @@ function detectMode() {
     } catch {}
   };
   try {
+    // 1. Explicit URL param (?app=play|ios) — highest priority, for testing/override.
     const param = new URL(window.location.href).searchParams.get("app");
     if (param === "school") { persist("play"); return "play"; }
     if (param && VALID_MODES.includes(param) && param !== "full") {
       persist(param);
       return param;
     }
+    // 2. Native wrapper User-Agent marker — the primary signal for store builds.
+    const ua = (typeof navigator !== "undefined" && navigator.userAgent) || "";
+    for (const marker in UA_MARKERS) {
+      if (ua.indexOf(marker) !== -1) {
+        persist(UA_MARKERS[marker]);
+        return UA_MARKERS[marker];
+      }
+    }
+    // 3. Cookie — carried across full-page navigations to the tool pages.
     if (typeof document !== "undefined") {
       const m = document.cookie.match(/clkn-store-mode=(play|ios|full)/);
       if (m && m[1] !== "full") return m[1];
@@ -158,10 +176,16 @@ export function StoreModeGate({ hideIn, showOnlyIn, children }) {
 }
 
 export const STORE_MODE_FEATURES = FEATURES;
+export const STORE_MODE_UA_MARKERS = UA_MARKERS; // {ClucknorrisPlay:"play", ClucknorrisIOS:"ios"}
 
 // ── Server-side note (server.js, main session) ────────────────────────────
-// Mirror this on the backend so direct URL probes are blocked, not just hidden:
-//   - Read the clkn-store-mode cookie (play|ios) on each request.
+// Mirror this on the backend so direct URL probes are blocked, not just hidden.
+// Detect mode from the User-Agent header (primary) or the clkn-store-mode
+// cookie (fallback) on each request:
+//   const ua = req.headers["user-agent"] || "";
+//   const mode = ua.includes("ClucknorrisPlay") ? "play"
+//              : ua.includes("ClucknorrisIOS")  ? "ios"
+//              : (req.cookies?.["clkn-store-mode"] || "full");
 //   - In "play": 404 /airdrop, /buyspecial, /rose, /premium, /slots, /bags,
 //     /grant, /investors, and the buy-CLKN endpoints.
 //   - In "ios": all of the above PLUS the wallet/holder endpoints
