@@ -1,0 +1,5 @@
+{
+  "_comment": "Pinned Store-edition frontend releases consumed by scripts/prep-dist.mjs. Built + published from the MAIN app repo (see play-store/STORE-EDITION-MANIFEST.md). Bump the version + url to update the installed store app; a website change alone never affects it. url should point to a .tgz whose top level is the built site (index.html at the root after --strip-components=1).",
+  "google": { "version": null, "url": null },
+  "ios": { "version": null, "url": null }
+}
