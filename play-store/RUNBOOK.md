@@ -6,8 +6,8 @@ Three of these phases run in parallel (marked ⟲), so start the slow ones early
 
 **Who does what:**
 - **YOU** = clicking in browsers / dashboards, safeguarding keys, approving.
-- **MAIN SESSION** = a Claude session on the `cluck-norris-school` repo (the live site). Hand it `GATING-SPEC.md`.
-- **WRAPPER SESSION** = a fresh Claude session on the new `clkn-store` repo. Hand it the new-repo brief.
+- **MAIN SESSION** = a Claude session on the `cluck-norris-school` repo (the live site). Hand it `MAIN-REPO-HANDOFF.md` + `STORE-EDITION-MANIFEST.md` (draft) + `DELIVERY-CONTRACT.md`.
+- **WRAPPER SESSION** = a session on the **existing wrapper repo (CLKN-SEEKER, this repo)** — where the live Solana app already lives. The Google/iOS build targets are added *here* (no new repo); the Solana target stays untouched.
 
 ---
 
@@ -17,9 +17,9 @@ You already have:
 - ✅ CLKN Productions LLC formed
 - ✅ Privacy + Terms live at `clucknorris.app/privacy` and `/terms`
 - ✅ Play listing assets built: `play-store/feature-graphic.png`, `icon.png`, `listing.yaml`
-- ✅ `store-mode.jsx` (three-tier + UA detection) written and tested
+- ✅ Wrapper 3-target scaffolding landed in this repo (`capacitor.config.ts`, `scripts/prep-dist.mjs`, `store-edition.lock`, `build:play`)
 
-**⚠️ Do NOT touch the CLKN-SEEKER repo or the live dApp Store app during any of this.** It's done and shipping. Everything below happens in *other* repos.
+**⚠️ The Google/iOS targets are added in THIS wrapper repo — that's expected.** What you must NOT disturb is the **Solana target** itself: its `app.clucknorris.school` appId, its keystore/signing, and its remote `server.url`. A no-arg `build:solana` must always reproduce the live app. The live *published* dApp Store app is unaffected regardless (it's already out); this is about keeping future Solana rebuilds identical.
 
 ---
 
@@ -53,51 +53,56 @@ You already have:
 
 ---
 
-## PHASE 2 ⟲ — Deploy the site gating (MAIN SESSION; do in parallel with Phase 1)
+## PHASE 2 ⟲ — Build the Store edition (MAIN SESSION; parallel with Phase 1)
 
-**2.1 — Hand the gating spec to the main session**
-- Open a Claude session on the **`cluck-norris-school`** repo.
-- Paste in the full contents of **`play-store/GATING-SPEC.md`**.
-- Let it do Parts 1–3 (add `store-mode.jsx`, wrap `<App/>`, `FeatureGate` the UI, add the `server.js` middleware).
+The Google Play / iOS app is a **separate, bundled, allow-listed frontend** — NOT the
+live site with hidden flags. The main repo builds it and publishes a versioned artifact
+the wrapper bundles.
 
-**2.2 — Verify on a branch BEFORE it hits `main`**
-Ask the main session to run its own verification (Part 4 of the spec), then you personally spot-check on the deployed branch/preview:
-- Load the site normally → **everything still there** (this protects the live app). 
-- Load `…/?app=play` → **Bags, buy-CLKN, airdrop form, grant/investor links all GONE**; school + free tools still there.
-- Load `…/?app=ios` → all that PLUS wallet/holder UI gone.
-- **✅ Done when:** all three render correctly AND `curl -A "Mozilla/5.0 ClucknorrisPlay" https://clucknorris.app/bags` returns 404 (ask the session to run this).
+**2.1 — Hand the build to the main-repo session**
+- Open a Claude session on **`cluck-norris-school`**.
+- Give it `play-store/MAIN-REPO-HANDOFF.md`, plus `STORE-EDITION-MANIFEST.md` (a **DRAFT** — it reconciles against current code) and `DELIVERY-CONTRACT.md`.
+- It reconciles scope, then builds the Store edition per the contract: bundled, **hash routing**, absolute **`API_BASE=https://clucknorris.app`**, backend **CORS** for the webview origins, exam still server-scored, Ask-Cluck AI-content reporting.
 
-**2.3 — Merge to `main` → Railway deploys**
-- **⚠️ CRITICAL non-regression check:** immediately after deploy, open `clucknorris.app` in a normal browser and confirm the FULL site is 100% normal (Bags, buy links, everything). The live dApp Store app loads this — if the full site broke, the live app broke. If anything looks off, tell the session to roll back.
-- **✅ Done when:** full site normal in a browser, and `?app=play` / `?app=ios` render stripped.
+**2.2 — Both sessions agree the contract §9 items FIRST**
+- `API_BASE` + exact CORS origins; the endpoint allow-list; any Capacitor plugin; the artifact publish URL. Lock these before implementation so neither side builds on assumptions.
 
-**⚠️ Nothing downstream works until Phase 2 is deployed and verified — the wrapper loads the live site, so if the site doesn't respond to the UA/param, the wrapper won't look stripped.**
+**2.3 — Publish the artifact + protect the live app**
+- Main repo publishes `store-edition-google-<version>.tgz` and hands back its **URL + sha256 (+ sourceCommit)**.
+- **⚠️** The main session must NOT change the live full-site experience — the Solana app loads it. The Store edition is an ADDITIONAL build. Confirm `clucknorris.app` is 100% normal in a browser after any main-repo deploy.
+- **✅ Done when:** a published `store-google` artifact URL + sha256 is in hand.
+
+**⚠️ Nothing downstream builds until this artifact exists — the wrapper bundles it.**
 
 ---
 
-## PHASE 3 ⟲ — Build the Android wrapper + AAB (WRAPPER SESSION)
+## PHASE 3 — Build the Google Play AAB (THIS wrapper repo; after the artifact exists)
 
-**3.1 — Create the new repo**
-- On GitHub, create a new **private** repo named **`clkn-store`** under the clucknorrisapp org (empty, no README needed).
+**No new repo.** The existing wrapper repo grows a `googlePlay` target (already
+scaffolded: `capacitor.config.ts`, `scripts/prep-dist.mjs`, `store-edition.lock`, the
+`build:play` script). The Solana target is preserved and unchanged.
 
-**3.2 — Hand the brief to a fresh Claude session on `clkn-store`**
-- Give it the **"NEW SESSION BRIEF — clkn-store"** (the wrapper brief from our chat). It will scaffold Capacitor, set `capacitor.config.ts` (appId `app.clucknorris.edu`, the two `appendUserAgent` markers), add Android, generate the upload keystore, and build the signed **AAB**.
-- **⚠️ appId `app.clucknorris.edu` is PERMANENT once published.** Confirm you're happy with it before the first upload. It's fine and distinct from the Seeker's `app.clucknorris.school`.
+**3.1 — Pin the Store-edition artifact**
+- In `store-edition.lock`, set `google` → `{ version, url, sha256, sourceCommit }` from what the main repo published. (Come back to this wrapper session and I'll do it + verify the checksum wiring.)
+
+**3.2 — Land the build.gradle change + build**
+- Apply the Gradle-property appId/keystore selection from `WRAPPER-BUILD-TARGETS.md`, then `npm run build:play` → signed `app-release.aab`, bundling the pinned, checksum-verified Store edition. Runs on a **toolchain** (your Mac / a provisioned session), not this container (no Android SDK here).
+- **⚠️ Preserve Solana:** a no-arg `npm run build:solana` must still reproduce the live app (appId `app.clucknorris.school`, same keystore, remote `clucknorris.app`). Verify once on the toolchain before shipping any Solana update.
 
 **3.3 — SAFEGUARD THE NEW UPLOAD KEYSTORE**
-- The session produces `clkn-edu-upload.jks` + a password. **Save both forever** (password manager + a backup), exactly like you did the dApp Store keystore.
-- **⚠️ This is a DIFFERENT key from the Seeker keystore. Losing it means you can't update the Play app.** Do not skip this.
+- `build:play` signs with a **NEW `clkn-edu` upload key** (separate from the Seeker key), referenced via `keystore.play.properties` (gitignored). **Save the `.jks` + password forever** — losing it = can't update the Play app. Google Play App Signing manages the final signing key.
+- **⚠️ appId `app.clucknorris.edu` is PERMANENT once published** — distinct from the Seeker's `app.clucknorris.school` so both coexist.
 
 **3.4 — Get the AAB file**
-- **✅ Done when:** you have `app-release.aab` saved on your machine.
+- **✅ Done when:** you have a signed `app-release.aab` built from the pinned Store edition.
 
 ---
 
 ## PHASE 4 — Capture stripped screenshots (after Phase 2 is live)
 
-**4.1 — Load the stripped app view**
-- On your phone/emulator or Appetize, open `https://clucknorris.app/?app=play`.
-- **⚠️ Confirm it looks stripped** (no Bags, no buy-CLKN, no airdrop). If it still shows the full app, Phase 2 isn't deployed correctly — stop and fix that first.
+**4.1 — Load the stripped Store-edition view**
+- Best: install the **internal-testing AAB** on a device (Phase 7.1) and screenshot there. Alternatively, screenshot the main repo's Store-edition preview build.
+- **⚠️ Confirm it looks stripped** (no Bags, no buy-CLKN, no airdrop, no wallet). If it shows the full app, the wrong artifact got bundled — stop and fix (check `store-edition.lock` / the published artifact).
 
 **4.2 — Capture ≥ 4 phone screenshots**
 - Good ones: home/landing (stripped), a lesson, the Ultimate Challenge, LP Lab, a free tool (Cluck Score). **Portrait.**
@@ -171,15 +176,15 @@ Ask the main session to run its own verification (Part 4 of the spec), then you 
 ## PHASE 8 — After it's live
 - Grab the Play Store URL, add it wherever you list the dApp Store link.
 - For updates: bump `versionCode` in the wrapper, rebuild the AAB with the SAME upload keystore, upload a new Production release. Content changes need no new AAB (they flow from the live site, same as the Seeker app).
-- **iOS App Store** is the remaining track: same `clkn-store` repo (`npx cap add ios`), Mac + Xcode + your iOS-app skill, Apple Developer account ($99/yr) under CLKN Productions LLC, `ios` mode (education-only). Separate runbook when you're ready.
+- **iOS App Store** is the remaining track — and it is **NOT a prerequisite for the Play launch; Google Play ships first.** Same wrapper repo (CLKN-SEEKER): `CLKN_TARGET=ios npx cap add ios` on a Mac + Xcode + your iOS-app skill, Apple Developer account ($99/yr) under CLKN Productions LLC, bundling the `store-ios` artifact (education-only). Separate runbook when you're ready.
 
 ---
 
 ## The "don't mess this up" short list
-1. **Never touch the live CLKN-SEEKER repo / dApp Store app.**
+1. **Never disturb the Solana target** — appId `app.clucknorris.school`, its keystore/signing, remote `server.url`. The Google/iOS targets are additive in this same wrapper repo; a no-arg `build:solana` must still reproduce the live app.
 2. **Org account, not personal** (DUNS required, but no tester rule + LLC name shown).
 3. **Save the new `clkn-edu` upload keystore + password forever** (separate from the Seeker key).
-4. **Verify the FULL site is normal after the gating deploys** (the live app depends on it).
+4. **Verify the FULL site is normal after any main-repo deploy** (the live Solana app loads it).
 5. **Screenshots must be of the STRIPPED build** — never the dApp Store shots.
 6. **Data Safety + content rating must be truthful** — under-claim if unsure.
 7. **`app.clucknorris.edu` is permanent** — confirm before first upload.

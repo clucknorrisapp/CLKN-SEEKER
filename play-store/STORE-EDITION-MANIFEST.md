@@ -38,7 +38,7 @@ Legend: **IN** = ship in Store edition · **OUT** = excluded from the build ·
 | Cluck Trace (fund-flow) | read-only, no connect | **IN** |
 | Holders (concentration) | read-only, no connect | **IN** |
 | Owners Snapshot | read-only, free | **IN** |
-| Wallet Checkup | read-only scan **+ revoke tx** | **ADAPT**: ship the scan; the *revoke* is a wallet transaction → drop it on iOS, optional on Google (user-initiated, not a purchase) |
+| Wallet Checkup | read-only scan **+ revoke tx** | **ADAPT**: ship the **scan only**. **Drop the revoke on BOTH stores in v1** — no wallet transactions in v1, either side (the revoke is a wallet tx) |
 | Listing Checkup | read-only, "full needs pass" | **ADAPT**: ship free (remove the CLKN pass) or OUT |
 | Wallet X-Ray | read-only, "requires pass" | **ADAPT**: ship free (remove pass) or OUT |
 | Cluck Score / Token Autopsy | read-only (if still present) | **IN** (free) |
@@ -80,9 +80,11 @@ that are OUT, not factual education.
 | Transcript display / share card | IN (plain certificate) |
 | **Wallet-address collection + airdrop signup** on claim | **OUT** (reward-for-tasks + wallet collection) — issue the certificate without collecting an address in the Store edition |
 
-## STORE-iOS delta (drops vs STORE-Google)
-Everything above **plus**: no wallet connect at all → **OUT** on iOS: Wallet Checkup's
-revoke action and anything that would open/require a wallet. iOS = pure read + learn.
+## STORE-iOS vs STORE-Google — v1 is IDENTICAL
+For **v1 there is NO wallet on either store** — no connect, no holder-gate, no on-chain
+transactions (Wallet Checkup ships scan-only on both). So the two variants are
+**feature-identical in v1**; they're pinned separately only for future divergence.
+Post-v1, if any wallet-capable feature returns on Google, iOS still drops it (Apple 3.1.1).
 
 ## Build / delivery guidance
 - Build the Store edition as its **own controlled frontend release** (bundled into the

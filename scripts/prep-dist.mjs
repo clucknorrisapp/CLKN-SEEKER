@@ -6,13 +6,19 @@
 //                                          current CLKN_TARGET (googlePlay | ios)
 //
 // The Store edition is a SEPARATE, versioned frontend release built in the main
-// app repo (see play-store/STORE-EDITION-MANIFEST.md). We consume a PINNED version
-// from store-edition.lock so a routine website change can never alter the installed
-// store app. If nothing is pinned yet, the "store" path fails loudly on purpose —
-// you cannot accidentally ship a placeholder to Google Play / the App Store.
+// app repo (see play-store/STORE-EDITION-MANIFEST.md + DELIVERY-CONTRACT.md). We
+// consume a PINNED, CHECKSUMMED version from store-edition.lock so (a) a routine
+// website change can never alter the installed store app, and (b) we never bundle
+// an artifact that doesn't match what was reviewed. Pinning freezes the bundled
+// FRONTEND only — the app still calls the live backend, so backend/API changes
+// must stay compatible with pinned frontend versions.
+//
+// If nothing is pinned, the "store" path fails loudly on purpose — you cannot
+// accidentally ship a placeholder or an unverified artifact to a store.
 
 import { existsSync, mkdirSync, writeFileSync, rmSync, readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
@@ -49,31 +55,46 @@ if (mode === "store") {
   try { lock = JSON.parse(readFileSync(LOCK, "utf8")); } catch {}
   const pin = lock?.[variant];
 
-  if (!pin || !pin.url || !pin.version) {
+  // Require a fully pinned + checksummed release. sourceCommit is recommended for
+  // traceability back to the exact main-repo build.
+  if (!pin || !pin.url || !pin.version || !pin.sha256) {
     console.error(
-      `\nprep-dist: NO Store-edition release pinned for "${variant}".\n` +
-      `The Store edition is built + published from the MAIN app repo, then pinned here.\n` +
-      `Edit store-edition.lock, e.g.:\n` +
-      `  { "${variant}": { "version": "1.0.0", "url": "https://<release-artifact>.tgz" } }\n` +
-      `Refusing to build a store target without a real Store-edition release.\n`
+      `\nprep-dist: Store-edition release for "${variant}" is not fully pinned.\n` +
+      `store-edition.lock needs { version, url, sha256 } (sourceCommit recommended), e.g.:\n` +
+      `  "${variant}": { "version": "1.0.0", "url": "https://…/store-edition-${variant}-1.0.0.tgz",\n` +
+      `                 "sha256": "<hex>", "sourceCommit": "<main-repo commit sha>" }\n` +
+      `Refusing to build a store target without a pinned, checksummed release.\n`
     );
-    process.exit(1); // hard-stops build:play / build:ios until a real release is pinned
+    process.exit(1);
   }
 
-  console.log(`prep-dist: fetching Store-edition ${variant} v${pin.version} …`);
-  resetDist();
-  const tgz = join(ROOT, ".store-edition.tgz");
+  const commitNote = pin.sourceCommit ? ` (main@${String(pin.sourceCommit).slice(0, 9)})` : "";
+  console.log(`prep-dist: fetching Store-edition ${variant} v${pin.version}${commitNote} …`);
   const res = await fetch(pin.url);
   if (!res.ok) { console.error(`prep-dist: download failed HTTP ${res.status}`); process.exit(1); }
-  writeFileSync(tgz, Buffer.from(await res.arrayBuffer()));
-  // Store-edition artifact is expected to be a .tgz whose top level is the built site.
+  const bytes = Buffer.from(await res.arrayBuffer());
+
+  // Verify checksum BEFORE we touch dist/ — never bundle an unverified artifact.
+  const digest = createHash("sha256").update(bytes).digest("hex");
+  if (digest.toLowerCase() !== String(pin.sha256).toLowerCase()) {
+    console.error(
+      `prep-dist: CHECKSUM MISMATCH — refusing to bundle.\n` +
+      `  expected ${pin.sha256}\n  got      ${digest}\n`
+    );
+    process.exit(1);
+  }
+
+  resetDist();
+  const tgz = join(ROOT, ".store-edition.tgz");
+  writeFileSync(tgz, bytes);
+  // Artifact is a .tgz whose single top-level dir holds the built site.
   execFileSync("tar", ["-xzf", tgz, "-C", DIST, "--strip-components=1"], { stdio: "inherit" });
   rmSync(tgz, { force: true });
   if (!existsSync(join(DIST, "index.html"))) {
-    console.error("prep-dist: extracted release has no index.html — wrong artifact?");
+    console.error("prep-dist: extracted release has no index.html at root — wrong artifact shape?");
     process.exit(1);
   }
-  console.log(`prep-dist: dist/ now holds Store-edition ${variant} v${pin.version}.`);
+  console.log(`prep-dist: dist/ now holds Store-edition ${variant} v${pin.version} (sha256 verified).`);
   process.exit(0);
 }
 
