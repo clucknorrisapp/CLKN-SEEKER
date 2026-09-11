@@ -46,7 +46,11 @@ You already have:
 - **✅ Done when:** account created and verification submitted.
 - **⚠️ Organization (not Individual) is what exempts you from the 12-tester/14-day rule AND shows "CLKN Productions LLC" as the public developer name instead of your personal name. You cannot change this later without a new account.**
 
-**1.4 — Complete org + identity verification**  ◀ YOU ARE HERE
+**1.4 — Complete org + identity verification — DONE ✅** (account fully verified)
+
+> **PHASE 1 COMPLETE.** Google Play org account is live + verified under CLKN Productions LLC.
+> The account is no longer a blocker — the only thing gating launch now is the **build**
+> (Store edition → wrapper AAB), then the listing (Phase 5) + submit.
 - Google verifies the org against the D-U-N-S record and your identity as the rep (email/phone confirmation, sometimes a document request). Respond promptly.
 - **✅ Done when:** account status shows **verified** (a few days to ~2 weeks; gated on the DUNS being issued).
 - **⚠️ Don't create the app listing until verified** — you can start filling it in, but it can't go live unverified.
