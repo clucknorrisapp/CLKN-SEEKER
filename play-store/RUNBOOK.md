@@ -31,8 +31,8 @@ You already have:
 - **Note:** a brand-new DUNS can take a few days to become verifiable by Google — if signup can't validate it, wait 2–3 days and retry (do **not** re-apply for a second DUNS).
 
 **1.2 — Prep before signup (do while the DUNS processes)**
-- **Owner Google account:** use a dedicated one (`clucknorrisapp@gmail.com`), **NOT** a personal account. **Turn on 2FA first** — whoever controls this account controls the Play account forever.
-- **Domain email:** set up `support@clucknorris.app` (or similar). Google's org verification prefers an email at your domain over gmail — and Apple will want the same later.
+- **Owner Google account:** `clucknorrisapp@gmail.com` (decided — a gmail login is fine; it's the private owner and is never shown publicly). **Turn on 2FA** (authenticator app) — whoever controls this account controls the Play account forever. *(Can migrate the owner to a Workspace `@clucknorris.app` account later; not required.)*
+- **Public support/contact email:** `chuck@clucknorris.app` (Cloudflare forward). This goes in the listing's support-email field, so what the public sees is the LLC name + a domain email — not the gmail login.
 - **Business info** matching the DUNS record: legal name `CLKN Productions LLC`, address, phone, website `https://clucknorris.app`.
 - A **card** for the $25 fee.
 
