@@ -2,8 +2,8 @@
 # Publisher: CLKN Productions LLC.  Package: app.clucknorris.edu.
 # This build EXCLUDES (via store-mode "play"): Bags.fm feed, airdrop/claim,
 # buy-CLKN / token promo, hackathon & grant surfaces, slots, CLKN payments.
-# It KEEPS: the school, the library, the free research tools, and (in-app,
-# not promoted here) the CLKN-holder gate for advanced tools.
+# It KEEPS: the school, the library, and the free read-only research tools.
+# v1 has NO wallet connect / holder-gate on either store (deferred out of v1).
 #
 # NOTE: this listing copy is deliberately education-forward and mentions NO
 # token, purchase, airdrop, or investment language — Google's crypto policy
@@ -37,7 +37,7 @@ store_listing:
     before it costs you.
 
   category: "Education"
-  contact_email: "clucknorrisapp@gmail.com"
+  contact_email: "chuck@clucknorris.app"
   website: "https://clucknorris.app"
   privacy_policy: "https://clucknorris.app/privacy"
   # Play does not surface a Terms field the way the dApp Store does, but keep
@@ -66,12 +66,8 @@ data_safety:
       shared_with_third_parties: false
       user_can_request_deletion: true
       optional: false
-    - type: "Solana wallet address"
-      collected: true
-      purpose: "App functionality (holder verification for advanced tools)"
-      shared_with_third_parties: false
-      optional: true
-      note: "Public on-chain address only; used to read CLKN balance. No private keys, no seed phrase, no custody, no payment credentials."
+    # (No "connected wallet address" in v1 — the store build has no wallet
+    # connect / holder-gate. If a wallet feature returns post-v1, re-add it here.)
     - type: "Token/wallet addresses pasted into research tools"
       collected: true
       purpose: "App functionality (on-chain lookup to generate the report)"
@@ -81,7 +77,7 @@ data_safety:
       note: "Public blockchain identifiers, not tied to user identity."
   security_practices:
     encrypted_in_transit: true            # all traffic is HTTPS
-    users_can_request_deletion: true      # via clucknorrisapp@gmail.com
+    users_can_request_deletion: true      # via chuck@clucknorris.app
     committed_to_play_families_policy: false
   data_NOT_collected:
     - "Name, email, phone number"
