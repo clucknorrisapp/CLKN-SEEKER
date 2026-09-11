@@ -1,5 +1,5 @@
 {
   "_comment": "Pinned Store-edition frontend releases consumed by scripts/prep-dist.mjs. Built + published from the MAIN app repo (see play-store/STORE-EDITION-MANIFEST.md + DELIVERY-CONTRACT.md). Bump version/url/sha256 to update the installed store app; a website change alone never affects it. Pinning freezes the bundled FRONTEND only — the app still calls the live backend, which must stay compatible with pinned versions. url -> a .tgz whose single top-level dir holds the built site (index.html at root after tar --strip-components=1). sha256 = hex digest of the .tgz (verified before bundling). sourceCommit = the main-repo commit the artifact was built from (traceability). v1: google and ios are feature-identical (no wallet either side) — they may still be pinned separately for future divergence.",
-  "google": { "version": null, "url": null, "sha256": null, "sourceCommit": null },
+  "google": { "version": "1.0.0", "url": "https://github.com/clucknorrisapp/cluck-norris-school/releases/download/store-google-v1.0.0/store-edition-google-1.0.0.tgz", "sha256": "189557e76ca608b029ce4851e4f4e1c79b9f41da8a74fb98344918326b96d923", "sourceCommit": "dc8652afa737273bf7262c3d81717b78ac3ce8fb" },
   "ios": { "version": null, "url": null, "sha256": null, "sourceCommit": null }
 }

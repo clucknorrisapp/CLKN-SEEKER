@@ -37,9 +37,9 @@ store_listing:
   category: "Education"
   contact_email: "chuck@clucknorris.app"
   website: "https://clucknorris.app"
-  privacy_policy: "https://clucknorris.app/privacy"
+  privacy_policy: "https://clucknorris.app/privacy/store"   # store-scoped: no wallet/payments/token, matches the stripped build + Data Safety
   # Play does not surface a Terms field the way the dApp Store does, but keep
-  # https://clucknorris.app/terms linked from the in-app footer.
+  # https://clucknorris.app/terms/store linked from the in-app footer (store-scoped terms).
 
 assets:
   icon: "./icon.png"                        # 512x512 (reused from the dApp Store package)
@@ -56,33 +56,54 @@ release:
 # ── Data Safety form (MANDATORY on Play) — DRAFT, verify each answer ────────
 # Answer honestly against the actual stripped-build runtime before submitting.
 data_safety:
+  # Authoritative inventory from the main repo (the code that actually runs),
+  # relayed 2026-09-11. Mapped to Google's Data Safety data-type taxonomy below.
   collects_or_shares_data: true
   data_types:
-    - type: "App activity — page views / product interaction"
+    - type: "App activity — app interactions + lesson completions"
+      google_category: "App activity → App interactions"
       collected: true
-      purpose: "Analytics"
+      purpose: "App functionality; Analytics"
+      shared_with_third_parties: false      # first-party only; NO analytics SDK present
+      user_can_request_deletion: true
+      optional: false
+    - type: "Device or other IDs — random app-generated session id"
+      google_category: "Device or other IDs"
+      collected: true
+      purpose: "App functionality (issues + verifies the completion certificate)"
       shared_with_third_parties: false
       user_can_request_deletion: true
       optional: false
-    # (No "connected wallet address" in v1 — the store build has no wallet
-    # connect / holder-gate. If a wallet feature returns post-v1, re-add it here.)
-    - type: "Token/wallet addresses pasted into research tools"
+      note: >
+        App-generated random id (Firebase-installation-style), NOT a device or
+        advertising ID and not tied to a real-world identity; 120-day idle expiry.
+        Under Google's 'Device or other IDs' definition this is declared Yes; the
+        privacy policy discloses it either way.
+    - type: "App activity — other user-generated content (Ask Cluck questions + answer reports)"
+      google_category: "App activity → Other user-generated content"
       collected: true
-      purpose: "App functionality (on-chain lookup to generate the report)"
+      purpose: "App functionality (AI tutoring); abuse/content reporting"
       shared_with_third_parties: true
-      shared_with: "on-chain data providers (RPC / Solscan-class APIs) to perform the lookup"
+      shared_with: "Anthropic (AI tutor + translation); read-aloud text goes to ElevenLabs"
       optional: true
-      note: "Public blockchain identifiers, not tied to user identity."
+      note: "No user identifier is attached to questions or reports."
+  # NOT 'collected' — ephemeral processing (per Google's ephemeral-processing rule):
+  #   A public token/address you paste into a research tool is sent once to a data
+  #   provider to run the lookup, not stored and not tied to you. Providers called:
+  #   Helius (Wallet Checkup); DexScreener, GeckoTerminal, CoinGecko, Solscan,
+  #   Jupiter token list, RugCheck (Listing Checkup).
   security_practices:
     encrypted_in_transit: true            # all traffic is HTTPS
-    users_can_request_deletion: true      # via chuck@clucknorris.app
+    users_can_request_deletion: true      # email clucknorrisapp@gmail.com (or chuck@clucknorris.app, which forwards there) with the certificate id
     committed_to_play_families_policy: false
   data_NOT_collected:
     - "Name, email, phone number"
     - "Precise or approximate location"
     - "Contacts, photos, files"
     - "Payment or financial account info (no in-app purchases; no card/bank data)"
+    - "Wallet address (no wallet connect / holder-gate in this build)"
     - "Private keys / seed phrases (never requested)"
+    - "Advertising ID, ads SDK, or third-party analytics SDK (none present)"
 
 # ── Content rating questionnaire notes ─────────────────────────────────────
 content_rating:
