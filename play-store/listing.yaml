@@ -23,14 +23,12 @@ store_listing:
     - The Incubator: beginner lessons on wallets, tokens, on/off-ramps, DEXs, and liquidity
     - School of Hard Knocks: progressive lessons with a Freshman-to-Emeritus belt ranking
     - The Ultimate Challenge: a 50-question exam, scored server-side, 94% to pass
-    - Survival Simulator: practice real crypto decisions with simulated money, zero risk
     - LP Lab: a hands-on liquidity course with interactive calculators
     - Ask Cluck: a tough-love AI crypto tutor built into every lesson
 
-    FREE SAFETY TOOLS for any Solana token or wallet:
-    - Cluck Score: a 0-100 token-health read (honeypot-aware)
-    - Token Autopsy: an AI forensic breakdown of any token
-    - Wallet Safety Checkup: scan any address for lingering approvals, honeypots, and freeze/mint risk
+    FREE SAFETY TOOLS — read-only, no wallet connection:
+    - Wallet Safety Checkup: scan any Solana address for lingering token approvals, honeypots, and freeze/mint risk
+    - Listing Checkup: sanity-check a token's on-chain details before you touch it
 
     Guardrails first: the app never takes custody, never asks for your seed
     phrase, and shows a stay-safe checklist on every action. Learn the game
