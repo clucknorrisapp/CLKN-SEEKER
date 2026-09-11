@@ -25,10 +25,10 @@ You already have:
 
 ## PHASE 1 ⟲ — Google Play ORGANIZATION account (START TODAY; slowest track)
 
-**1.1 — DUNS number for CLKN Productions LLC — APPLIED ✅ (waiting on issuance)**
-- Applied at **dnb.com** (free). You need the 9-digit number *in hand* to finish org verification (1.4).
-- **⚠️** The legal name + address you gave D&B must match what you enter in Google **character-for-character**.
-- Issuance takes ~1–30 days — the reason this phase started first.
+**1.1 — DUNS number for CLKN Productions LLC — OBTAINED ✅**
+- Received (kept in your password manager / with the LLC docs — deliberately **not** committed to this repo). You'll reuse the same number for the Apple org enrollment later.
+- **⚠️** When you enter it in Google, the legal name + address must match the D&B / DUNS record **character-for-character**.
+- **Note:** a brand-new DUNS can take a few days to become verifiable by Google — if signup can't validate it, wait 2–3 days and retry (do **not** re-apply for a second DUNS).
 
 **1.2 — Prep before signup (do while the DUNS processes)**
 - **Owner Google account:** use a dedicated one (`clucknorrisapp@gmail.com`), **NOT** a personal account. **Turn on 2FA first** — whoever controls this account controls the Play account forever.
@@ -36,7 +36,7 @@ You already have:
 - **Business info** matching the DUNS record: legal name `CLKN Productions LLC`, address, phone, website `https://clucknorris.app`.
 - A **card** for the $25 fee.
 
-**1.3 — Create the account as an ORGANIZATION**
+**1.3 — Create the account as an ORGANIZATION**  ◀ YOU ARE HERE
 - Go to **play.google.com/console/signup**, sign in with the owner account.
 - Account type → **"An organization or business"** (NOT "Yourself").
 - Enter the organization details (matching the DUNS record) + the **D-U-N-S number**.
