@@ -1,6 +1,18 @@
 apply plugin: 'com.android.application'
 
-def keystorePropertiesFile = rootProject.file("keystore.properties")
+// ── Multi-target app id + signing ──────────────────────────────────────────
+// The Solana / FULL edition is the DEFAULT and is intentionally unchanged: with
+// no Gradle properties it builds app id "app.clucknorris.school" signed from
+// keystore.properties (npm run build:solana → assembleRelease). The Google Play
+// STORE edition passes -PclknAppId=app.clucknorris.edu and
+// -PclknKeystore=keystore.play.properties (npm run build:play → bundleRelease).
+// namespace stays app.clucknorris.school — it's the code package (R/BuildConfig,
+// MainActivity), not the published id, so it must not change with the target.
+// Every keystore*.properties file is gitignored and must never be committed.
+def clknAppId = project.hasProperty('clknAppId') ? project.clknAppId : 'app.clucknorris.school'
+def clknKeystoreName = project.hasProperty('clknKeystore') ? project.clknKeystore : 'keystore.properties'
+
+def keystorePropertiesFile = rootProject.file(clknKeystoreName)
 def keystoreProperties = new Properties()
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
@@ -10,7 +22,7 @@ android {
     namespace = "app.clucknorris.school"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "app.clucknorris.school"
+        applicationId clknAppId
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
