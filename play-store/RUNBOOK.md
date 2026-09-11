@@ -36,7 +36,7 @@ You already have:
 - **Business info** matching the DUNS record: legal name `CLKN Productions LLC`, address, phone, website `https://clucknorris.app`.
 - A **card** for the $25 fee.
 
-**1.3 — Create the account as an ORGANIZATION**  ◀ YOU ARE HERE
+**1.3 — Create the account as an ORGANIZATION — DONE ✅** (org account created + $25 paid)
 - Go to **play.google.com/console/signup**, sign in with the owner account.
 - Account type → **"An organization or business"** (NOT "Yourself").
 - Enter the organization details (matching the DUNS record) + the **D-U-N-S number**.
@@ -46,7 +46,7 @@ You already have:
 - **✅ Done when:** account created and verification submitted.
 - **⚠️ Organization (not Individual) is what exempts you from the 12-tester/14-day rule AND shows "CLKN Productions LLC" as the public developer name instead of your personal name. You cannot change this later without a new account.**
 
-**1.4 — Complete org + identity verification**
+**1.4 — Complete org + identity verification**  ◀ YOU ARE HERE
 - Google verifies the org against the D-U-N-S record and your identity as the rep (email/phone confirmation, sometimes a document request). Respond promptly.
 - **✅ Done when:** account status shows **verified** (a few days to ~2 weeks; gated on the DUNS being issued).
 - **⚠️ Don't create the app listing until verified** — you can start filling it in, but it can't go live unverified.
