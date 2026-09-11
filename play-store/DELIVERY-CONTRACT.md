@@ -43,7 +43,8 @@ change it here first and I'll re-scaffold.
   - `capacitor://localhost`  (iOS)
   - `https://localhost`      (Android, Capacitor 5/6)
   - `http://localhost`       (older Android webview)
-  (Main session: confirm the exact set against the shipped Capacitor version.) Without this,
+  - `ionic://localhost`      (older Ionic/Capacitor origin — included by PR #288)
+  (Confirm the exact set against the shipped Capacitor version.) Without this,
   every tool/exam/Ask-Cluck request fails **only inside the installed app** — green in a
   browser, red in review.
 

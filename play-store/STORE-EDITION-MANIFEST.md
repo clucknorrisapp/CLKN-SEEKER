@@ -26,22 +26,23 @@ app are OUT unless someone deliberately adds them to this allow-list.
 
 ## ✅ THE ALLOW-LIST (only these ship — verify each against current code)
 **Education core (the React app):** the school (Incubator, School of Hard Knocks, Ultimate
-Challenge — keep it **server-scored**, never ship the answer key, Survival Simulator), plus
-`src/sections/LPLab.jsx` and `src/sections/Library.jsx`. Education standalone pages that are
-purely lessons/reference (e.g. `crypto-school`, `education`, `classroom`, the school `home`).
-7 languages, progress, bookmarks, read-aloud.
+Challenge — keep it **server-scored**, never ship the answer key), plus LP Lab and Library
+(`src/sections/`). 7 languages, progress, bookmarks, read-aloud. *(Note: "Survival Simulator"
+was removed from the product months ago — nothing to ship there.)* The React school is the
+store edition's entry page.
 
 **Ask Cluck** (AI tutor) — **ADAPT:** add in-app reporting for AI-generated content (Google
 AI policy) + a data-collection inventory for the store privacy forms.
 
-**Read-only research tools — candidate allow-list; INCLUDE only after confirming EACH is
-(a) read-only, (b) free/no CLKN pass, (c) no wallet connect:** `wallet-checkup` (scan only),
-`wallet-xray`, `trace`, `token-holders`, `owners-snapshot`, `listing-checkup`, `autopsy`,
-`lp-scanner`, `stats`. Any that require a pass/paywall → free-them or drop. Any that open a
-wallet or write on-chain → drop from v1.
+**Read-only research tools — SHIPPED in v1 (final, per PR #288):** `wallet-checkup` (scan-only;
+revoke/connect compiled out) and `listing-checkup` (free; its gate was client-only). The other
+research tools (`wallet-xray`, `trace`, `token-holders`, `owners-snapshot`) are **OUT of v1** —
+their gate is server-side, and freeing them would require a backend bypass keyed to the app's
+marker (UA-as-authorization), which the contract forbids. Revisit once real entitlements exist.
 
-**Transcript** — **ADAPT:** issue the certificate **without** collecting a Solana address or
-offering an airdrop in the store edition.
+**Transcript → certificate of completion** (implemented in PR #288: `POST /api/claim/certificate`,
+`GET /certificate/:id`): verified against the same server-side lesson ledger as the wallet claim,
+but with **no wallet and no address collected** — the name stays on the device.
 
 Everything not named above is OUT.
 
