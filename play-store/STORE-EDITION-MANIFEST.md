@@ -1,106 +1,95 @@
 # Store-Edition Manifest — Cluck Norris (Google Play v1, iOS later)
 
-**What this is.** The page-by-page / capability-by-capability definition of the
-**Store edition** — the education-focused build for Google Play (and later iOS).
-Per the agreed architecture (Codex's guidance), the Store edition is a **separately
-built, allow-listed frontend** — excluded items are **absent from the build**, not
-hidden on the live site. This manifest is the source of truth for that build; it
-lives in / drives the **main app repo**, and the wrapper repo's `googlePlay`/`ios`
-targets consume the resulting Store-edition release.
+Defines the **Store edition** — the education build for Google Play (later iOS). It's a
+**separately built, allow-listed frontend** (Codex's model): excluded surfaces are
+**absent from the build**, not hidden. This manifest is the source of truth for that build.
 
-**Editions:**
+## ⚠️ READ FIRST — the live app is large and policy-sensitive → ALLOW-LIST, default-deny
+As of 2026-09 the live `clucknorris.app` repo has **~48 tool pages** plus `normie-quest/`,
+a token **swap**, an **order book**, a **prize wheel**, **RoseHorses**, **CUNA staking/payout**,
+buy competitions, market-making dashboards, and paid B2B tools. Many are exactly what Google
+gates hardest (exchange, gambling, financial products). **Do NOT build the store edition as
+"the app minus a list"** — the OUT set is huge and grows every week, and a single miss ships
+an exchange or gambling screen into a reviewed store app.
+
+**Build it as a strict ALLOW-LIST:** only the explicitly listed education + read-only pages
+below are included; **everything else is excluded by default.** New pages added to the live
+app are OUT unless someone deliberately adds them to this allow-list.
+
+## Editions
 - **FULL** — website + Solana dApp Store (Seeker). Everything. Already live.
-- **STORE-Google** — this manifest. Education + read-only research; no crypto
-  payments, no holder-unlocks, no transaction tools, no promo/fundraising.
-- **STORE-iOS** — STORE-Google **minus anything that needs a wallet** (Apple 3.1.1).
+- **STORE-Google / STORE-iOS** — this manifest. Education + read-only research only.
+  v1 has **NO wallet, NO holder-gate, NO on-chain transactions** on either store → the two
+  variants are **feature-identical in v1**.
 
-Legend: **IN** = ship in Store edition · **OUT** = excluded from the build ·
-**ADAPT** = ship a modified/free version.
+---
 
-> Classifications below are from the live site on 2026-09-09. **Finalize against
-> the current main-repo code** before building — names/routes may differ.
+## ✅ THE ALLOW-LIST (only these ship — verify each against current code)
+**Education core (the React app):** the school (Incubator, School of Hard Knocks, Ultimate
+Challenge — keep it **server-scored**, never ship the answer key, Survival Simulator), plus
+`src/sections/LPLab.jsx` and `src/sections/Library.jsx`. Education standalone pages that are
+purely lessons/reference (e.g. `crypto-school`, `education`, `classroom`, the school `home`).
+7 languages, progress, bookmarks, read-aloud.
 
-## School & learning — all IN
-| Item | Store edition |
-|---|---|
-| Incubator (beginner lessons) | IN |
-| School of Hard Knocks (lessons + belts) | IN |
-| Ultimate Challenge (server-scored exam) | IN |
-| Survival Simulator | IN |
-| LP Lab + calculators | IN |
-| Library / Chain Info / glossary | IN |
-| 7 languages, progress, bookmarks, read-aloud | IN (make these solid — see functionality note) |
-| Ask Cluck (AI tutor) | IN + **ADAPT**: add in-app reporting for AI-generated content (Google AI policy), and confirm chat data handling in the privacy disclosure |
+**Ask Cluck** (AI tutor) — **ADAPT:** add in-app reporting for AI-generated content (Google
+AI policy) + a data-collection inventory for the store privacy forms.
 
-## Research tools — read-only IN (paywalls removed), wallet-actions ADAPT/OUT
-| Tool | Type (from /tools) | Store edition |
-|---|---|---|
-| Cluck Trace (fund-flow) | read-only, no connect | **IN** |
-| Holders (concentration) | read-only, no connect | **IN** |
-| Owners Snapshot | read-only, free | **IN** |
-| Wallet Checkup | read-only scan **+ revoke tx** | **ADAPT**: ship the **scan only**. **Drop the revoke on BOTH stores in v1** — no wallet transactions in v1, either side (the revoke is a wallet tx) |
-| Listing Checkup | read-only, "full needs pass" | **ADAPT**: ship free (remove the CLKN pass) or OUT |
-| Wallet X-Ray | read-only, "requires pass" | **ADAPT**: ship free (remove pass) or OUT |
-| Cluck Score / Token Autopsy | read-only (if still present) | **IN** (free) |
+**Read-only research tools — candidate allow-list; INCLUDE only after confirming EACH is
+(a) read-only, (b) free/no CLKN pass, (c) no wallet connect:** `wallet-checkup` (scan only),
+`wallet-xray`, `trace`, `token-holders`, `owners-snapshot`, `listing-checkup`, `autopsy`,
+`lp-scanner`, `stats`. Any that require a pass/paywall → free-them or drop. Any that open a
+wallet or write on-chain → drop from v1.
 
-## Transactional tools — all OUT of v1
-These mint / burn / lock / send / build transactions — OUT of the first Store build
-(Codex: evaluate individually later).
-| Tool | Why OUT |
-|---|---|
-| The Hatchery (mint SPL) | on-chain mint + CLKN/SOL pass |
-| Firepit (burn + rent reclaim) | on-chain burn |
-| Project Burn | on-chain burn |
-| Token Metadata Lock | on-chain tx |
-| Jup Locker Room (lock) | on-chain tx |
-| LP Rescue (build withdrawal tx) | on-chain tx |
-| Airdrop HOLD OR SOL (batch send) | on-chain send + 0.05 SOL/pass |
-| Buy Special (buy competitions/prizes) | competitions/prizes + pass |
-| Liquidity Engine | in development anyway |
+**Transcript** — **ADAPT:** issue the certificate **without** collecting a Solana address or
+offering an airdrop in the store edition.
 
-## Token / financial / promo surfaces — OUT
-| Surface | Why OUT |
-|---|---|
-| "Buy CLKN" button | token purchase promo |
-| "Coinbase" buy link | token purchase funnel |
-| Token price / market-cap banners | financial promo |
-| Bags.fm live launch feed | launchpad promo/funnel |
-| CLKN holder-based feature unlocks | Apple bans (3.1.1); deferred on Google too for v1 |
-| SOL/CLKN payments to unlock tools | store-payment-policy violation |
-| Investors page / grant / fundraising surfaces | project fundraising |
+Everything not named above is OUT.
 
-**Educational mentions of Bags/tokens can STAY** where they serve a lesson (e.g. a
-"how a launchpad works" lesson) — it's promotional placement and transaction funnels
-that are OUT, not factual education.
+## ❌ EXPLICITLY OUT (present in the live app; must NOT be in the store build)
+These are the reasons the allow-list must be default-deny — grouped by why:
 
-## Credentials / transcript — ADAPT
-| Item | Store edition |
-|---|---|
-| Earn a transcript by passing the exam / finishing curriculum | IN |
-| Transcript display / share card | IN (plain certificate) |
-| **Wallet-address collection + airdrop signup** on claim | **OUT** (reward-for-tasks + wallet collection) — issue the certificate without collecting an address in the Store edition |
+- **Exchange / trading** (Google crypto-exchange policy): `swap` (Token Swap), `order-book`,
+  `whale-panel`, `engine-dashboard`, `pool-monitor`, `whirlpool-mm`, `order`/market-making.
+- **Gambling / prizes:** `prize-wheel`, `rosehorses`, `buyspecial-*` (buy competitions,
+  draws, opt-ins, dashboards, pro), any reward wheel.
+- **Financial products / yield:** `cuna-staking` (lock-to-earn), `cuna-payout`, any staking,
+  lending, or earn/payout stream.
+- **Payments / passes:** any SOL/CLKN tools-pass or payment leg; `premium`; anything that
+  unlocks a feature for money or token holdings.
+- **On-chain transaction tools:** `hatchery` (mint), `firepit` / `project-burn` (burn),
+  `token-lock` / `locker-room` (lock), `lp-rescue`, `liquidity-locked`, `airdrop` /
+  `airdrop-signup` (batch send).
+- **Token promo / purchase funnels:** `clkn` (token page), "Buy CLKN", Coinbase buy link,
+  `bags` (launchpad feed), price/market-cap banners.
+- **Fundraising / B2B / paid services:** `investors`, grant surfaces, `client-portal`
+  (project portal), `jupverify` (paid verification), `alpha` (daily market signals).
+- **Admin / private panels:** `buycomp-admin`, `jupverify-admin`, `cuna-payout` (owner),
+  `whale-panel` (private), any owner/admin console.
+- **`normie-quest/`** — a separate holder-gated module with claims + burn. **OUT entirely**
+  (owner's decision to evaluate it separately, and its holder gate/rewards can't ship on iOS).
 
-## STORE-iOS vs STORE-Google — v1 is IDENTICAL
-For **v1 there is NO wallet on either store** — no connect, no holder-gate, no on-chain
-transactions (Wallet Checkup ships scan-only on both). So the two variants are
-**feature-identical in v1**; they're pinned separately only for future divergence.
-Post-v1, if any wallet-capable feature returns on Google, iOS still drops it (Apple 3.1.1).
+> This OUT list is illustrative, not exhaustive — that's the whole point of default-deny.
+> If it isn't on the allow-list, it doesn't ship.
+
+## STORE-iOS vs STORE-Google — v1 IDENTICAL
+v1 has no wallet on either store (no connect, no holder-gate, no on-chain tx). The two
+variants are feature-identical for v1; pinned separately only for future divergence.
 
 ## Build / delivery guidance
-- Build the Store edition as its **own controlled frontend release** (bundled into the
-  app, or a dedicated `store.clucknorris.app`-style deployment) — **not** the live site
-  with flags. Bundling also enables the offline lessons the stores like.
-- Drive it from a **feature catalogue** in the main repo (my `store-mode.jsx` feature
-  map is the seed for this — repurpose it as a build-time include list, not runtime hiding).
-- Keep **server-side checks** too as defense-in-depth: any endpoint the Store edition
-  must not reach (payments, mint/burn/lock/send, buy) should refuse Store-edition callers.
-- Wrapper repo: `googlePlay` and `ios` targets point at the Store-edition release;
-  `solana` target keeps loading the FULL live site. Distinct Android applicationId for
-  Google (`app.clucknorris.edu`) vs Solana (`app.clucknorris.school`).
+- Build the Store edition as its own controlled frontend release (a bundle), driven by an
+  explicit **include list** (allow-list) — excluded pages/components **compiled out**, not
+  runtime-hidden. Emit the versioned `.tgz` per DELIVERY-CONTRACT.md.
+- Bundle is local to the app; it still calls the live backend at absolute
+  `API_BASE=https://clucknorris.app` (backend needs CORS for the webview origins).
+- The wrapper's `googlePlay` target consumes the release; the `solana` target keeps loading
+  the FULL live site. See WRAPPER-BUILD-TARGETS.md.
 
 ## Finalize-before-build checklist
-- [ ] Reconcile every row against the CURRENT main-repo pages/routes
-- [ ] Decide free-vs-OUT for the pass-gated read-only tools (Wallet X-Ray, Listing Checkup)
-- [ ] Confirm Ask Cluck AI-content reporting + data inventory for privacy disclosures
-- [ ] Confirm the transcript can issue without wallet-address collection in Store edition
+- [ ] Build the **allow-list** from current code — confirm which education pages + read-only
+      tools are genuinely education-only, free, wallet-free
+- [ ] Confirm each read-only tool: no pass/paywall, no wallet connect, no on-chain write
+- [ ] Transcript issues without wallet-address collection in the store edition
+- [ ] Ask Cluck AI-content reporting + data inventory for privacy/Data-Safety forms
+- [ ] Nothing from the OUT categories (exchange/gambling/financial/tx/promo/admin/normie-quest)
+      is reachable — routes, deep links, and API calls all absent
 - [ ] Minimum-functionality pass: back nav, saved progress, offline lessons, error recovery, accessibility
