@@ -16,7 +16,7 @@
 // If nothing is pinned, the "store" path fails loudly on purpose — you cannot
 // accidentally ship a placeholder or an unverified artifact to a store.
 
-import { existsSync, mkdirSync, writeFileSync, rmSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync, rmSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
@@ -94,7 +94,46 @@ if (mode === "store") {
     console.error("prep-dist: extracted release has no index.html at root — wrong artifact shape?");
     process.exit(1);
   }
-  console.log(`prep-dist: dist/ now holds Store-edition ${variant} v${pin.version} (sha256 verified).`);
+
+  // Defense-in-depth: independently scan the extracted bundle for excluded flows.
+  // The main repo runs its OWN allow-list verifier, but the wrapper must not trust
+  // that blindly — a gap there once shipped a live Jupiter swap + wallet-connect +
+  // token-referral into the store build, and only a checksum was verified here. These
+  // patterns are high-signal: no education-only build should ever contain them, so a
+  // single hit means the pinned release is wrong. Refuse before it reaches an AAB/IPA.
+  const FORBIDDEN = [
+    ["buy/swap link (jup.ag/swap)", /jup\.ag\/swap/i],
+    ["CLKN mint address (token funnel)", /DW6DF2mjtyx67vcNmMhFm9XdxAwREurorghZcS3CBAGS/],
+    ["token referral link (bags.fm ?r=)", /bags\.fm[^\s"'<>]*[?&]r=/i],
+    ["on-chain signing (signAndSendTransaction)", /signAndSendTransaction/i],
+    ["wallet-connect revoke UI (syncRevokeUi)", /syncRevokeUi/i],
+    ["wallet-connect button (wallet-btn)", /wallet-btn/i],
+  ];
+  const TEXT_EXT = new Set([".js", ".mjs", ".cjs", ".html", ".htm", ".css", ".json", ".svg", ".txt", ".map"]);
+  const scan = (dir) => {
+    for (const name of readdirSync(dir)) {
+      const p = join(dir, name);
+      if (statSync(p).isDirectory()) { scan(p); continue; }
+      const dot = name.lastIndexOf(".");
+      if (dot < 0 || !TEXT_EXT.has(name.slice(dot).toLowerCase())) continue;
+      const text = readFileSync(p, "utf8");
+      for (const [label, re] of FORBIDDEN) {
+        if (re.test(text)) {
+          console.error(
+            `\nprep-dist: FORBIDDEN content in the pinned store bundle — refusing to build.\n` +
+            `  ${label}\n  found in ${p.replace(DIST + "/", "dist/")}\n\n` +
+            `This release still contains an EXCLUDED flow (buy/swap, wallet-connect, on-chain\n` +
+            `signing, or a token referral). It must be stripped in the MAIN repo and republished\n` +
+            `as a new store-edition release; do NOT ship this bundle. See play-store/STORE-EDITION-MANIFEST.md.\n`
+          );
+          process.exit(1);
+        }
+      }
+    }
+  };
+  scan(DIST);
+
+  console.log(`prep-dist: dist/ now holds Store-edition ${variant} v${pin.version} (sha256 + content scan verified).`);
   process.exit(0);
 }
 
