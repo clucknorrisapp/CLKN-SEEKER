@@ -30,14 +30,21 @@ the CLKN, coins-and-chains and tools doors compiled out.
 **Out forever (Play AND iOS):** swap, airdropper, mint, buy/pay, staking, gambling, wallet
 connect.
 
-## NEXT update (not this one)
-- **Token Autopsy** — read-only, not pass-gated, not on the deny list → can ship read-only cleanly.
-- **Wallet X-Ray, Token Holders, Trace** — **pass-gated server-side** (signed-session
-  enforcement on `develop` → `main`). There is **no honest store-only bypass** — the app's
-  user-agent marker is a hint, never authorization; freeing them in-store means freeing them for
-  everyone, or shipping an extractable key. **Owner decision required.** Recommendation (main +
-  wrapper): **no for now**, revisit post-hackathon with store usage numbers.
+## Owner calls (2026-09-13)
+- **Token Autopsy — OUT.** Keep it out of the store edition (owner decision). Simpler.
+- **Wallet X-Ray, Token Holders, Trace — OUT** (pass-gated server-side; no honest store-only
+  bypass — the UA marker is a hint, never authorization; freeing them in-store = free for
+  everyone or an extractable key). Revisit post-hackathon with store usage numbers.
 - **Cluck Score — RETIRED for good. Never rebuild, never in any store scope.**
+
+## Web / Solana-only — NEVER in a store build (Play or iOS), free or paid
+On-chain / financial features stay out of the store binaries regardless of pricing; the store
+app only *points* to the web (general destination, never a deep link into them):
+- **Airdropper** — on-chain batch send. Making it **free on the website** is a great top-of-funnel
+  ad; it still cannot ship inside the Play/iOS app. Funnel via a neutral "full toolkit on the web".
+- **CUNA lock-and-earn / staking** — a financial product → hard-out on both stores. Lives on the
+  website + the Solana dApp Store app when it lands. (Doesn't affect the hackathon entry.)
+- Gambling — retired from the product entirely; nothing to exclude.
 
 ## Delivery
 Main repo builds this as the next `store-google-v*` (and `store-ios-v*`) release; the wrapper
