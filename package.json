@@ -9,9 +9,9 @@
     "preview": "vite preview",
     "prep:solana": "node scripts/prep-dist.mjs solana",
     "prep:store": "node scripts/prep-dist.mjs store",
-    "build:solana": "CLKN_TARGET=solana npm run prep:solana && npx cap sync android && cd android && ./gradlew :app:assembleRelease",
-    "build:play": "CLKN_TARGET=googlePlay npm run prep:store && npx cap sync android && cd android && ./gradlew :app:bundleRelease -PclknAppId=app.clucknorris.edu -PclknKeystore=keystore.play.properties",
-    "build:ios": "CLKN_TARGET=ios npm run prep:store && npx cap sync ios"
+    "build:solana": "export CLKN_TARGET=solana && npm run prep:solana && npx cap sync android && cd android && ./gradlew :app:assembleRelease",
+    "build:play": "export CLKN_TARGET=googlePlay && npm run prep:store && npx cap sync android && cd android && ./gradlew :app:bundleRelease -PclknAppId=app.clucknorris.edu -PclknKeystore=keystore.play.properties",
+    "build:ios": "export CLKN_TARGET=ios && npm run prep:store && npx cap sync ios"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.4",
