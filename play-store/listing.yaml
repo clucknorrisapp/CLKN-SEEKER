@@ -12,27 +12,32 @@
 store_listing:
   # Play title max 30 chars; short_description max 80; full_description max 4000.
   title: "Cluck Norris: Crypto School"          # 27 chars
-  short_description: "A free, no-hype crypto school. Learn wallets, DeFi, and how not to get rekt."  # 75 chars
+  short_description: "Free crypto school + a tough-love AI tutor. Learn DeFi and how not to get rekt."  # 79 chars
   full_description: |
     "No participation trophies. No hand-holding. Just hard knocks."
 
-    Cluck Norris is a free crypto school built to keep beginners alive long
-    enough to actually understand crypto — before it teaches them the hard way.
+    Cluck Norris is a free crypto school built to keep beginners alive long enough
+    to actually understand crypto — before it teaches them the hard way. New here?
+    Tell Cluck where you're starting and he points you to the right first step.
 
-    FREE SCHOOL — no signup, no wallet required:
+    YOUR AI TUTOR — free, no signup, no wallet:
+    - Ask Cluck: a tough-love AI crypto tutor right on the home screen and inside
+      every lesson — ask anything, get a straight answer
+    - "Where do I start?": pick your path — brand new, know the basics, liquidity
+      pools, token research — and jump straight in
+
+    THE SCHOOL:
     - The Incubator: beginner lessons on wallets, tokens, on/off-ramps, DEXs, and liquidity
     - School of Hard Knocks: progressive lessons with a Freshman-to-Emeritus belt ranking
-    - The Ultimate Challenge: a 50-question exam, scored server-side, 94% to pass
     - LP Lab: a hands-on liquidity course with interactive calculators
-    - Ask Cluck: a tough-love AI crypto tutor built into every lesson
+    - Seven languages, saved progress, and read-aloud
 
     FREE SAFETY TOOLS — read-only, no wallet connection:
     - Wallet Safety Checkup: scan any Solana address for lingering token approvals, honeypots, and freeze/mint risk
     - Listing Checkup: sanity-check a token's on-chain details before you touch it
 
-    Guardrails first: the app never takes custody, never asks for your seed
-    phrase, and shows a stay-safe checklist on every action. Learn the game
-    before it costs you.
+    Guardrails first: the app never takes custody, never asks for your seed phrase,
+    and shows a stay-safe checklist on every action. Learn the game before it costs you.
 
   category: "Education"
   contact_email: "chuck@clucknorris.app"
