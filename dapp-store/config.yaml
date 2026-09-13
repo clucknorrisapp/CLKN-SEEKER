@@ -41,13 +41,11 @@ release:
         FREE SCHOOL, FOREVER — no signup, no wallet:
         - The Incubator: 7 beginner lessons (wallets, tokens, on/off-ramps, DEXs, liquidity)
         - School of Hard Knocks: 12 lessons, Freshman to Emeritus belt ranking
-        - The Ultimate Challenge: 50-question exam, scored server-side, 94% to pass
-        - Survival Simulator: practice real crypto decisions with simulated capital
         - LP Lab: a 12-lesson liquidity course with 7 interactive tools
-        - Ask Cluck: a tough-love AI crypto professor in every lesson
+        - Ask Cluck: a tough-love AI crypto professor on the home screen and in every lesson
+        - "Where do I start?": a concierge that routes newcomers to the right first step
 
         FREE TOKEN RESEARCH for any Solana mint:
-        - Cluck Score: a 0-100 token-health score (Token-2022 honeypot-aware)
         - Token Autopsy: an AI forensic post-mortem on any mint
         - Wallet Safety Checkup: read-only scan for approvals, honeypots, freeze/mint risk
         - Live Bags.fm launch feed: every new launch, real-time prices, trade links
@@ -65,19 +63,20 @@ release:
       uri: ./icon.png
     - purpose: banner
       uri: ./banner.png
-    # Screenshots captured from the Android build (Appetize). PNG files still
-    # need to be placed in ./screenshots/ — see README/notes. Order below is the
-    # intended listing order.
+    # ⚠️ SCREENSHOTS NEED RECAPTURE before the next dApp Store republish — the old
+    # notes referenced RETIRED features (Ultimate Challenge, Cluck Score, Survival
+    # Simulator). Recapture from the CURRENT app: lead with the AI (Ask Cluck on the
+    # home screen + the "Where do I start?" concierge); drop any retired-feature shots.
     - purpose: screenshot
-      uri: ./screenshots/01-home.png        # landing hero: brand + live stats
+      uri: ./screenshots/01-home.png        # landing hero: brand + Ask Cluck + "Where do I start?"
     - purpose: screenshot
-      uri: ./screenshots/02-school.png      # school home: ranks, Start School, Ultimate Challenge
+      uri: ./screenshots/02-school.png      # school home: ranks, Start School
     - purpose: screenshot
       uri: ./screenshots/03-lp-lab.png      # LP Lab lessons
     - purpose: screenshot
-      uri: ./screenshots/04-tools.png       # Tools: Cluck Score, Security Coop, Wallet Checkup, Hatchery
+      uri: ./screenshots/04-tools.png       # Tools: Token Autopsy, Security Coop, Wallet Checkup, Hatchery
     - purpose: screenshot
-      uri: ./screenshots/05-survival.png    # Crypto Survival Simulator
+      uri: ./screenshots/05-ask-cluck.png   # Ask Cluck AI tutor  (was 05-survival — Survival retired)
     - purpose: screenshot
       uri: ./screenshots/06-bags.png        # live Bags.fm launch feed
     - purpose: screenshot
@@ -91,8 +90,8 @@ solana_mobile_dapp_publisher_portal:
   # google_store_package: omitted — not published on Google Play
   testing_instructions: |
     No account, login, or wallet connection is required. Open the app and the
-    School, Library, Survival Simulator, LP Lab, and all free token tools
-    (/score, /autopsy, /wallet-checkup, the live Bags feed) are fully usable
+    School, Library, LP Lab, and the free token tools
+    (/autopsy, /wallet-checkup, the live Bags feed) are fully usable
     immediately. Premium tools show free educational content and only require a
     small one-time CLKN token payment to unlock the action — there is no fiat
     payment and no wallet-connect. The app is a thin client that loads the live
