@@ -12,7 +12,7 @@
 store_listing:
   # Play title max 30 chars; short_description max 80; full_description max 4000.
   title: "Cluck Norris: Crypto School"          # 27 chars
-  short_description: "A tough-love AI crypto tutor and school. Learn DeFi and how not to get rekt."  # 76 chars, no price/promo words (Play flags 'free' etc.)
+  short_description: "An AI crypto tutor and school. Learn wallets, DeFi, and how to stay safe."  # 72 chars, no promo/price words, no slang
   full_description: |
     "No participation trophies. No hand-holding. Just hard knocks."
 
