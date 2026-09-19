@@ -17,7 +17,8 @@ app:
   urls:
     license_url: https://clucknorris.app
     copyright_url: https://clucknorris.app
-    # TODO: /privacy page does not exist yet — needs adding on the public site
+    # /privacy is served live (public/privacy.html) — required for the dApp Store; /privacy/store
+    # is the store-edition variant used by the stripped Google/iOS builds.
     privacy_policy_url: https://clucknorris.app/privacy
     website: https://clucknorris.app
   media:

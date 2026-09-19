@@ -5,9 +5,11 @@ fresh clone with no local files.** Read this first.
 
 > ⚠️ **This file was a stale copy of the main repo's CLAUDE.md until 2026-09-19.** It described
 > `cluck-norris-school` as "this repo", named retired features (Ultimate Challenge, Cluck Score),
-> a closed grant, and a payment model that no longer exists — and granted standing permission to
-> push to `main`, which is wrong here. If anything below ever reads like it is describing the
-> website, it has drifted again; fix it rather than following it.
+> a closed grant, and platform business logic that does not belong here — and granted standing
+> permission to push to `main`, which is wrong here. (The CLKN-micropayment model it described is
+> **not** retired — it is live in the full app; it just isn't this repo's concern.) If anything
+> below ever reads like it is describing the website, it has drifted again; fix it rather than
+> following it.
 
 ---
 
@@ -95,7 +97,11 @@ Don't duplicate these — read them:
 - `play-store/GATING-SPEC.md`, `play-store/STORE-EDITION-LEGAL.md` — policy constraints.
 - `play-store/BUILD-ON-MAC.md`, `play-store/RUNBOOK.md`, `play-store/PLAY-CONSOLE-CHECKLIST.md` —
   how a release actually gets made.
-- `dapp-store/config.yaml` — the Solana dApp Store listing. ⚠️ Marked DRAFT, its
-  `privacy_policy_url` TODO is stale, and its listing copy still advertises retired features
-  (Cluck Score, Survival Simulator, Ultimate Challenge) and the retired CLKN-micropayment model.
-  **It needs a rewrite before the next republish.**
+- `dapp-store/config.yaml` — the Solana dApp Store listing for the LIVE `solana` target (the
+  full app that loads `clucknorris.app`). ⚠️ Still marked DRAFT — validate/finalize it through
+  the `dapp-store` CLI before submitting. Its listing **copy is accurate**: the CLKN-micropayment
+  premium model it describes is **live in the full app** (retired only from the stripped
+  Google/iOS store editions, not here), and `privacy_policy_url` (`/privacy`) is served live —
+  the in-file TODO calling that page missing is stale. What genuinely remains before the next
+  republish: **recapture the screenshots** (their annotations still reference retired features —
+  Cluck Score, Survival Simulator, Ultimate Challenge).
