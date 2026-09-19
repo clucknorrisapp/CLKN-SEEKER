@@ -1,0 +1,98 @@
+# Solana dApp Store publishing config — DRAFT
+# Consolidates the approved listing copy + assets. Field names follow the
+# Solana Mobile publishing schema, but VALIDATE/FINALIZE against the dapp-store
+# CLI in Phase C (e.g. `npx dapp-store ...`) before submitting. TODOs marked below.
+
+publisher:
+  name: Cluck Norris
+  website: https://clucknorris.app
+  email: clucknorrisapp@gmail.com
+  media:
+    - purpose: icon
+      uri: ./icon.png
+
+app:
+  name: Cluck Norris
+  android_package: app.clucknorris.school
+  urls:
+    license_url: https://clucknorris.app
+    copyright_url: https://clucknorris.app
+    # TODO: /privacy page does not exist yet — needs adding on the public site
+    privacy_policy_url: https://clucknorris.app/privacy
+    website: https://clucknorris.app
+  media:
+    - purpose: icon
+      uri: ./icon.png
+
+release:
+  catalog:
+    en-US:
+      name: Cluck Norris
+      subtitle: Crypto School and Tools
+      # NOTE: trim if the CLI enforces a shorter limit (fallback: "Free crypto school + token tools")
+      short_description: Free crypto school + Solana token-safety tools
+      long_description: |
+        "No participation trophies. No hand-holding. Just hard knocks."
+
+        Cluck Norris is a free school of crypto hard knocks plus a suite of
+        Solana token-research tools — built to keep first-timers alive long
+        enough to actually use crypto.
+
+        FREE SCHOOL, FOREVER — no signup, no wallet:
+        - The Incubator: 7 beginner lessons (wallets, tokens, on/off-ramps, DEXs, liquidity)
+        - School of Hard Knocks: 12 lessons, Freshman to Emeritus belt ranking
+        - LP Lab: a 12-lesson liquidity course with 7 interactive tools
+        - Ask Cluck: a tough-love AI crypto professor on the home screen and in every lesson
+        - "Where do I start?": a concierge that routes newcomers to the right first step
+
+        FREE TOKEN RESEARCH for any Solana mint:
+        - Token Autopsy: an AI forensic post-mortem on any mint
+        - Wallet Safety Checkup: read-only scan for approvals, honeypots, freeze/mint risk
+        - Live Bags.fm launch feed: every new launch, real-time prices, trade links
+
+        PREMIUM OPERATOR TOOLS paid in CLKN micropayments (no wallet-connect,
+        no subscription): batch airdrop sender, buy-competition trackers,
+        deep-forensics tier.
+
+        Guardrails first — every paid action requires an "I understand" step,
+        every page shows a stay-safe checklist, and the app never takes custody
+        or asks for your seed phrase.
+      new_in_version: Initial release — the full Cluck Norris school and Solana token toolkit, now native on Solana Mobile.
+  media:
+    - purpose: icon
+      uri: ./icon.png
+    - purpose: banner
+      uri: ./banner.png
+    # ⚠️ SCREENSHOTS NEED RECAPTURE before the next dApp Store republish — the old
+    # notes referenced RETIRED features (Ultimate Challenge, Cluck Score, Survival
+    # Simulator). Recapture from the CURRENT app: lead with the AI (Ask Cluck on the
+    # home screen + the "Where do I start?" concierge); drop any retired-feature shots.
+    - purpose: screenshot
+      uri: ./screenshots/01-home.png        # landing hero: brand + Ask Cluck + "Where do I start?"
+    - purpose: screenshot
+      uri: ./screenshots/02-school.png      # school home: ranks, Start School
+    - purpose: screenshot
+      uri: ./screenshots/03-lp-lab.png      # LP Lab lessons
+    - purpose: screenshot
+      uri: ./screenshots/04-tools.png       # Tools: Token Autopsy, Security Coop, Wallet Checkup, Hatchery
+    - purpose: screenshot
+      uri: ./screenshots/05-ask-cluck.png   # Ask Cluck AI tutor  (was 05-survival — Survival retired)
+    - purpose: screenshot
+      uri: ./screenshots/06-bags.png        # live Bags.fm launch feed
+    - purpose: screenshot
+      uri: ./screenshots/07-lesson-wallet.png  # "What is a Wallet?" lesson
+  files:
+    # TODO: copy the signed release APK here (or point to its build path) at submission time
+    - purpose: install
+      uri: ./app-release.apk
+
+solana_mobile_dapp_publisher_portal:
+  # google_store_package: omitted — not published on Google Play
+  testing_instructions: |
+    No account, login, or wallet connection is required. Open the app and the
+    School, Library, LP Lab, and the free token tools
+    (/autopsy, /wallet-checkup, the live Bags feed) are fully usable
+    immediately. Premium tools show free educational content and only require a
+    small one-time CLKN token payment to unlock the action — there is no fiat
+    payment and no wallet-connect. The app is a thin client that loads the live
+    clucknorris.app site, so an internet connection is required.

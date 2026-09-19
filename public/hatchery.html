@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>🥚 The Hatchery — CLKN Token Creator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0a0a0a; --card: #111111; --border: rgba(255,255,255,0.08);
+    --text: #F9FAFB; --subtext: #6B7280; --accent: #FCD34D;
+    --green: #10B981; --red: #EF4444; --mono: 'Courier New', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); background-image: radial-gradient(ellipse at 20% 10%, rgba(217,119,6,0.10) 0%, transparent 50%), radial-gradient(ellipse at 80% 90%, rgba(239,68,68,0.07) 0%, transparent 50%); color: var(--text); font-family: system-ui, sans-serif; min-height: 100vh; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 24px 16px 80px; }
+
+  .header { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+  .header-icon { font-size: 40px; filter: drop-shadow(0 0 16px rgba(217,119,6,0.5)); }
+  .header .brand-mini { font-family: 'Oswald', sans-serif; font-size: 10px; letter-spacing: 4px; color: #D97706; margin-bottom: 4px; font-weight: 700; }
+  .header h1 { font-family: 'Oswald', sans-serif; font-size: 28px; font-weight: 900; letter-spacing: 3px; background: linear-gradient(135deg, #FCD34D, #F97316, #EF4444); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; line-height: 1; }
+  .header p { font-family: 'Oswald', sans-serif; font-size: 11px; color: var(--subtext); letter-spacing: 3px; margin-top: 6px; }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 16px; }
+  .card-title { font-family: var(--mono); font-size: 10px; color: var(--subtext); letter-spacing: 2px; margin-bottom: 14px; }
+
+  .intro { font-size: 13px; line-height: 1.7; color: #D1D5DB; }
+  .intro b { color: var(--accent); }
+  .intro .mint-not-launch { display: block; margin-top: 10px; padding: 10px 12px; background: rgba(252,211,77,0.06); border: 1px solid rgba(252,211,77,0.25); border-radius: 8px; font-size: 12px; color: var(--accent); }
+
+  /* Wallet */
+  .wallet-picker { display: flex; gap: 8px; flex-wrap: wrap; }
+  .wallet-btn { flex: 1; min-width: 130px; display: flex; align-items: center; justify-content: center; gap: 8px; border: none; border-radius: 10px; padding: 12px 14px; font-family: var(--mono); font-size: 13px; font-weight: 700; color: #fff; letter-spacing: 1px; cursor: pointer; transition: transform 0.15s, opacity 0.15s; }
+  .wallet-btn:hover { transform: translateY(-1px); opacity: 0.95; }
+  .wallet-btn.phantom { background: linear-gradient(135deg, #9945FF, #6B21A8); }
+  .wallet-btn.solflare { background: linear-gradient(135deg, #FC822B, #B85F1F); }
+  .wallet-btn.backpack { background: linear-gradient(135deg, #E33E3F, #8B1E1E); }
+  .wallet-btn.okx { background: linear-gradient(135deg, #2B2B2B, #000000); }
+  .wallet-btn.coinbase { background: linear-gradient(135deg, #1652F0, #0A2A8C); }
+  .wallet-btn.trust { background: linear-gradient(135deg, #3375BB, #1C4A7E); }
+  .wallet-btn.glow { background: linear-gradient(135deg, #00D18C, #00785A); }
+  .wallet-btn.exodus { background: linear-gradient(135deg, #6E55C9, #3F3173); }
+  .wallet-btn.bitget { background: linear-gradient(135deg, #00F0FF, #0096A6); color: #06283D; }
+  .wallet-btn.brave { background: linear-gradient(135deg, #FB542B, #9E2D12); }
+  .wallet-btn.jupiter { background: linear-gradient(135deg, #4D8FF7, #1E429F); }
+  .wallet-info { font-family: var(--mono); font-size: 12px; color: var(--green); margin-top: 10px; padding: 10px 12px; background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.25); border-radius: 8px; display: none; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .wallet-info.show { display: flex; }
+  .wallet-info-addr { word-break: break-all; flex: 1; min-width: 0; }
+  .wallet-disc-btn { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); color: #FCA5A5; font-family: 'Oswald', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+
+  /* Form */
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-family: var(--mono); font-size: 11px; color: var(--subtext); letter-spacing: 1px; margin-bottom: 6px; }
+  .field label .hint { color: #4B5563; letter-spacing: 0; }
+  .field input[type=text], .field input[type=number] { width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 8px; padding: 11px 14px; font-family: var(--mono); font-size: 14px; color: var(--text); }
+  .field input:focus { outline: none; border-color: var(--accent); }
+  .row2 { display: flex; gap: 10px; }
+  .row2 .field { flex: 1; }
+
+  .logo-drop { border: 1px dashed rgba(255,255,255,0.18); border-radius: 10px; padding: 16px; text-align: center; cursor: pointer; transition: border-color 0.15s; }
+  .logo-drop:hover { border-color: var(--accent); }
+  .logo-drop input { display: none; }
+  .logo-drop .logo-hint { font-family: var(--mono); font-size: 11px; color: var(--subtext); }
+  #logoPreview { display: none; max-width: 88px; max-height: 88px; border-radius: 10px; margin: 0 auto 10px; }
+
+  .toggle-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; }
+  .toggle-row input[type=checkbox] { margin-top: 2px; cursor: pointer; accent-color: var(--accent); width: 16px; height: 16px; flex-shrink: 0; }
+  .toggle-row .toggle-text { font-size: 12px; line-height: 1.6; }
+  .toggle-row .toggle-text b { color: var(--text); font-family: var(--mono); font-size: 12px; }
+  .toggle-row .toggle-text span { color: var(--subtext); }
+  .fee-box:empty { display: none; }
+  .fee-box { margin: 2px 0 16px; padding: 11px 13px; background: rgba(252,211,77,0.06); border: 1px solid rgba(252,211,77,0.28); border-radius: 8px; }
+  .fee-box .fee-title { font-family: var(--mono); font-size: 10px; letter-spacing: 1.5px; color: var(--accent); margin-bottom: 8px; }
+  .fee-box .fee-single { font-family: var(--mono); font-size: 12px; color: var(--text); }
+  .fee-box .fee-pick { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; font-family: var(--mono); font-size: 11px; color: var(--subtext); }
+  .fee-btn { background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; font-family: var(--mono); font-size: 12px; color: var(--subtext); cursor: pointer; }
+  .fee-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(252,211,77,0.1); }
+  .fee-box .fee-note { margin-top: 8px; font-size: 11px; color: var(--subtext); line-height: 1.55; }
+  .fee-btn-clkn { border-color: rgba(34,197,94,0.45); }
+  .fee-btn-clkn.active { border-color: #4ade80; color: #4ade80; background: rgba(34,197,94,0.12); }
+  .fee-save { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 4px; background: rgba(34,197,94,0.18); border: 1px solid rgba(34,197,94,0.55); color: #4ade80; font-size: 10px; letter-spacing: 0.5px; }
+  .fee-box .fee-tip { margin-top: 9px; padding: 9px 11px; background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.3); border-radius: 6px; font-size: 11px; color: var(--text); line-height: 1.6; }
+  .fee-box .fee-tip b { color: #4ade80; }
+
+  .hatch-btn { width: 100%; background: linear-gradient(135deg, #FCD34D, #F97316); border: none; border-radius: 10px; padding: 15px; font-family: 'Oswald', sans-serif; font-size: 16px; font-weight: 900; letter-spacing: 2px; color: #1a1a1a; cursor: pointer; transition: opacity 0.15s; }
+  .hatch-btn:hover { opacity: 0.9; }
+  .hatch-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .progress { display: none; margin-top: 12px; font-family: var(--mono); font-size: 12px; color: var(--accent); text-align: center; }
+  .progress.show { display: block; }
+
+  .error-box { display: none; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; padding: 12px 14px; font-family: var(--mono); font-size: 12px; color: #FCA5A5; margin-bottom: 16px; }
+  .error-box.show { display: block; }
+
+  .result { display: none; }
+  .result.show { display: block; }
+  .result-title { font-family: 'Oswald', sans-serif; font-size: 20px; font-weight: 900; letter-spacing: 2px; color: var(--green); margin-bottom: 12px; }
+  .result-row { font-family: var(--mono); font-size: 12px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); word-break: break-all; }
+  .result-row .rk { color: var(--subtext); }
+  .result-row a { color: #93C5FD; text-decoration: none; }
+  .handoff { margin-top: 14px; padding: 12px 14px; background: rgba(252,211,77,0.06); border: 1px solid rgba(252,211,77,0.25); border-radius: 8px; font-size: 12px; line-height: 1.7; color: #D1D5DB; }
+  .handoff b { color: var(--accent); }
+  .handoff a { color: #93C5FD; text-decoration: none; }
+  .handoff .ho-warn { margin-top: 12px; padding: 10px 12px; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.3); border-radius: 7px; color: #FCA5A5; }
+  .handoff .ho-sec { margin-top: 12px; }
+  .lp-details { margin-bottom: 16px; }
+  .lp-details summary { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; font-family: var(--mono); font-size: 11px; letter-spacing: 1px; color: var(--accent); cursor: pointer; list-style: none; }
+  .lp-details summary::-webkit-details-marker { display: none; }
+  .lp-details[open] summary { border-radius: 12px 12px 0 0; border-bottom: none; }
+  .lp-details .handoff { margin-top: 0; border-radius: 0 0 12px 12px; }
+  .calc { margin-top: 10px; background: rgba(0,0,0,0.25); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+  .calc-title { font-family: var(--mono); font-size: 10px; letter-spacing: 1.5px; color: var(--accent); margin-bottom: 10px; }
+  .calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .calc-grid label { display: flex; flex-direction: column; gap: 4px; font-family: var(--mono); font-size: 10px; color: var(--subtext); }
+  .calc-grid .opt { color: #4B5563; }
+  .calc-grid input { background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-family: var(--mono); font-size: 13px; color: var(--text); }
+  .calc-grid input:focus { outline: none; border-color: var(--accent); }
+  .calc-out { margin-top: 10px; padding: 10px 12px; background: rgba(252,211,77,0.06); border: 1px solid rgba(252,211,77,0.2); border-radius: 6px; font-family: var(--mono); font-size: 12px; color: var(--text); line-height: 1.7; }
+  .calc-out b { color: var(--accent); }
+  .calc-out .calc-note { color: var(--subtext); font-size: 11px; }
+  .calc-pair { font-family: var(--mono); font-size: 10px; color: var(--subtext); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .calc-pair-btn { background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 6px; padding: 5px 14px; font-family: var(--mono); font-size: 11px; color: var(--subtext); cursor: pointer; }
+  .calc-pair-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(252,211,77,0.08); }
+  .calc-teach { margin-top: 10px; font-family: system-ui, sans-serif; font-size: 11px; line-height: 1.6; color: var(--subtext); }
+  .calc-teach b { color: #D1D5DB; }
+
+  .footer-tag { text-align: center; margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border); font-family: 'Oswald', sans-serif; font-size: 10px; color: var(--subtext); letter-spacing: 3px; }
+  .footer-tag a { color: #D97706; text-decoration: none; }
+
+  /* Desktop — wider container so the page fills a larger screen */
+  @media (min-width: 1040px) {
+    .wrap { max-width: 1040px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a href="/" class="back-home" style="display:inline-flex;align-items:center;gap:6px;font-family:Oswald,sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;color:#D97706;text-decoration:none;margin:0 0 12px;"><img src="/cluck-norris-logo.jpg" alt="" style="height:22px;width:22px;object-fit:cover;border-radius:50%;border:1px solid #D97706;"/>&larr; CLUCK NORRIS HOME</a>
+
+  <div class="header">
+    <div class="header-icon">🥚</div>
+    <div>
+      <div class="brand-mini">CLUCK NORRIS</div>
+      <h1>THE HATCHERY</h1>
+      <p>GUIDED TOKEN CREATOR</p>
+    </div>
+  </div>
+
+  <div id="errorBox" class="error-box"></div>
+
+  <div class="card">
+    <div class="intro">
+      The Hatchery <b>creates a token</b> — it deploys a fixed-supply SPL token
+      on Solana with the name, logo, and authority settings you choose, and
+      explains each decision as you make it. That is all a token is at the
+      start: a contract with a name and a supply. It has <b>no price, no
+      market, and no value</b> until liquidity is added.
+      <span class="mint-not-launch">🥚 Creating a token is <b>not</b> launching a
+      project. A token with no liquidity is inert — it can't be bought or sold.
+      The Hatchery stops at the mint on purpose; adding liquidity is a separate,
+      higher-stakes step you take yourself — and there's a full Launch
+      Liquidity Guide on this page you can read before you mint, or after.</span>
+    </div>
+  </div>
+
+  <!-- Ask Cluck — contextual help for beginners; any term, any question -->
+  <div class="card" style="border-color:rgba(56,189,248,0.3);background:rgba(56,189,248,0.04)">
+    <div class="card-title" style="color:#38BDF8">🐔 NEW TO ANY OF THIS? ASK CLUCK</div>
+    <div style="font-size:12.5px;color:#9CA3AF;line-height:1.6;margin-bottom:10px">Stuck on a term anywhere on this page — <i>decimals, mint authority, liquidity, concentrated pool</i>? Ask in plain English. Cluck answers free.</div>
+    <div style="display:flex;gap:6px">
+      <input id="askInput" type="text" autocomplete="off" placeholder="e.g. what does revoking mint authority do?" style="flex:1;min-width:0;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:#F9FAFB;font-size:13px;outline:none" onkeydown="if(event.key==='Enter')askCluck()"/>
+      <button id="askBtn" onclick="askCluck()" style="flex-shrink:0;background:rgba(56,189,248,0.15);border:1px solid rgba(56,189,248,0.4);border-radius:8px;padding:9px 16px;font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;color:#38BDF8;letter-spacing:1px;cursor:pointer">ASK</button>
+    </div>
+    <div id="askAnswer" style="display:none;margin-top:10px;background:rgba(0,0,0,0.25);border:1px solid var(--border);border-radius:8px;padding:11px 13px;font-size:13px;color:#D1D5DB;line-height:1.65;white-space:pre-wrap"></div>
+    <div style="margin-top:10px;font-size:11.5px;color:#6B7280">Don't trust Cluck? 📚 <a href="/#library" style="color:#FCD34D;text-decoration:none">Go read the Library yourself →</a></div>
+  </div>
+
+  <!-- Wallet -->
+  <div class="card">
+    <div class="card-title">1 · CONNECT WALLET</div>
+    <div class="wallet-picker" id="walletPicker">
+      <button class="wallet-btn phantom" onclick="connectWallet('phantom')">🔮 Phantom</button>
+      <button class="wallet-btn solflare" onclick="connectWallet('solflare')">☀️ Solflare</button>
+      <button class="wallet-btn backpack" onclick="connectWallet('backpack')">🎒 Backpack</button>
+      <button class="wallet-btn okx" onclick="connectWallet('okx')">⭕ OKX</button>
+      <button class="wallet-btn coinbase" onclick="connectWallet('coinbase')">🔵 Coinbase</button>
+      <button class="wallet-btn trust" onclick="connectWallet('trust')">🛡 Trust</button>
+      <button class="wallet-btn glow" onclick="connectWallet('glow')">🌐 Glow</button>
+      <button class="wallet-btn exodus" onclick="connectWallet('exodus')">🪐 Exodus</button>
+      <button class="wallet-btn bitget" onclick="connectWallet('bitget')">🌊 Bitget</button>
+      <button class="wallet-btn brave" onclick="connectWallet('brave')">🦁 Brave</button>
+      <button class="wallet-btn jupiter" onclick="connectWallet('jupiter')">🪐 Jupiter</button>
+    </div>
+    <div id="mobileConnect" style="display:none;margin-top:12px;flex-direction:column;gap:8px"></div>
+    <div class="wallet-info" id="walletInfo">
+      <span class="wallet-info-addr" id="walletInfoAddr"></span>
+      <button class="wallet-disc-btn" onclick="disconnectWallet()">DISCONNECT</button>
+    </div>
+  </div>
+
+  <!-- Form -->
+  <div class="card">
+    <div class="card-title">2 · TOKEN DETAILS</div>
+    <div class="field">
+      <label>TOKEN NAME <span class="hint">— what it's called (max 32)</span></label>
+      <input type="text" id="tokenName" maxlength="32" placeholder="Cluck Coin"/>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>SYMBOL <span class="hint">(max 10)</span></label>
+        <input type="text" id="tokenSymbol" maxlength="10" placeholder="CLUCK"/>
+      </div>
+      <div class="field">
+        <label>DECIMALS <span class="hint">(0–9)</span></label>
+        <input type="number" id="tokenDecimals" min="0" max="9" value="9"/>
+      </div>
+    </div>
+    <div class="field">
+      <label>TOTAL SUPPLY <span class="hint">— how many tokens exist, total</span></label>
+      <input type="text" id="tokenSupply" inputmode="numeric" placeholder="1000000000"/>
+    </div>
+    <div class="field">
+      <label>DESCRIPTION <span class="hint">— optional</span></label>
+      <input type="text" id="tokenDesc" maxlength="200" placeholder="A short line about the token"/>
+    </div>
+    <div class="field">
+      <label>LOGO <span class="hint">— PNG/JPG, 100 KB or smaller (keeps the upload free)</span></label>
+      <label class="logo-drop" for="logoInput">
+        <img id="logoPreview" alt="logo preview"/>
+        <div class="logo-hint" id="logoHint">Tap to choose a logo image</div>
+        <input type="file" id="logoInput" accept="image/png,image/jpeg,image/webp" onchange="onLogoPick(this)"/>
+      </label>
+    </div>
+  </div>
+
+  <!-- Authorities -->
+  <div class="card">
+    <div class="card-title">3 · AUTHORITIES <span style="color:#4B5563">— recommended: revoke both</span></div>
+    <div class="toggle-row">
+      <input type="checkbox" id="revokeMint" checked/>
+      <div class="toggle-text">
+        <b>Revoke mint authority</b><br>
+        <span>After the full supply is minted, no more can ever be created. Supply
+        is locked forever. Buyers look for this — it's the difference between a
+        fixed token and one the dev can inflate.</span>
+      </div>
+    </div>
+    <div class="toggle-row">
+      <input type="checkbox" id="revokeFreeze" checked/>
+      <div class="toggle-text">
+        <b>Revoke freeze authority</b><br>
+        <span>No one can ever freeze a holder's tokens. Leaving freeze authority
+        active is a common rug vector — revoking it removes that power entirely.</span>
+      </div>
+    </div>
+    <div style="margin-top:10px;background:rgba(96,165,250,0.06);border:1px solid rgba(96,165,250,0.22);border-radius:8px;padding:11px 13px;font-size:12.5px;line-height:1.6;color:#9CA3AF">
+      <b style="color:#93C5FD">A third authority worth knowing — metadata (update authority).</b><br>
+      Beyond mint and freeze there's the <b>update authority</b>: it controls whether your token's <b>name, logo, and socials</b> can be changed after launch. This minter leaves your metadata <b>mutable</b> on purpose — so you can fix a broken image or legitimately rebrand later. The tradeoff is real: a <b>mutable</b> token asks buyers to trust you won't bait-and-switch, while an <b>immutable</b> one locks the branding forever. Rug-checkers — including our own <a href="/autopsy" style="color:#FCD34D">Token Autopsy</a> — surface which one it is. If you'd rather lock yours permanently, you can set the metadata immutable or renounce the update authority after minting with a Metaplex tool (e.g. the Metaboss CLI). Neither choice is "right" — just know who can change what, because your holders will check.
+    </div>
+  </div>
+
+  <!-- Launch Liquidity Guide — collapsible, readable before or after minting -->
+  <details class="lp-details" id="lpGuide">
+    <summary>📖 WHAT HAPPENS AFTER YOU MINT — THE LAUNCH LIQUIDITY GUIDE (read anytime)</summary>
+    <div class="handoff">
+      A token is <b>inert until liquidity is added</b> — no price, no market,
+      nothing to trade. This is what that next step involves. Read it
+      <b>before</b> you do it: it's where real money is at stake, and it is not
+      something to improvise. <b>The Hatchery does not add liquidity for you</b>
+      — you do this yourself, on a DEX.
+
+      <div class="ho-warn">⚠️ Don't add a single dollar of liquidity until you
+      understand all four sections below. The LP Lab goes deeper still.</div>
+
+      <div class="ho-sec"><b>1 · Starting ratio — this sets your opening price.</b>
+      To open a pool you deposit two things: your token and SOL (or USDC). The
+      <i>ratio</i> of those amounts <b>is</b> the starting price — fewer tokens
+      against more SOL opens higher, more tokens against less SOL opens lower.
+      It is the single most consequential number in a launch. Decide the
+      opening price you intend first, then work the deposit amounts backward
+      from it.
+      <div class="calc">
+        <div class="calc-title">⚖️ STARTING-PRICE CALCULATOR</div>
+        <div class="calc-pair">Pair with:
+          <button type="button" class="calc-pair-btn active" id="pairSol" onclick="setPair('sol')">SOL</button>
+          <button type="button" class="calc-pair-btn" id="pairUsdc" onclick="setPair('usdc')">USDC</button>
+        </div>
+        <div class="calc-grid">
+          <label>Tokens in the pool<input type="text" id="calcTokens" inputmode="decimal" placeholder="100000000" oninput="calcStartPrice()"/></label>
+          <label id="lblQuote">SOL in the pool<input type="text" id="calcQuote" inputmode="decimal" placeholder="10" oninput="calcStartPrice()"/></label>
+          <label id="lblQuotePrice">SOL price now, USD<input type="text" id="calcQuotePrice" inputmode="decimal" placeholder="150" oninput="calcStartPrice()"/></label>
+          <label>Total supply <span class="opt">(optional)</span><input type="text" id="calcSupply" inputmode="decimal" placeholder="1000000000" oninput="calcStartPrice()"/></label>
+        </div>
+        <div class="calc-out" id="calcOut">Enter the amounts to see your token's opening price.</div>
+        <div class="calc-teach">ⓘ <b>SOL vs. USDC pairing matters.</b> If you pair with SOL, your token's price is set <i>in SOL</i> — so its <b>dollar value rides SOL's</b>: SOL up 20% and your untraded token is worth 20% more in USD; SOL down 20% and so is your token, even though nothing about it changed. Pairing with USDC anchors the price to the dollar instead. Neither is wrong — just know a SOL pair ties your token's USD value to SOL's swings.</div>
+      </div></div>
+
+      <div class="ho-sec"><b>2 · Standard pool vs. concentrated liquidity — the
+      decision new creators get wrong most.</b><br>
+      A <b>standard pool</b> (constant-product AMM) spreads your liquidity
+      across every price from zero to infinity. Simple and forgiving — there is
+      always liquidity at every price. Most tokens should launch this way.<br>
+      A <b>concentrated-liquidity pool</b> lets you place liquidity only inside
+      a chosen price <i>range</i>. Far more capital-efficient — but on a
+      brand-new token it is a sharp tool that cuts you if mishandled:<br>
+      • If price trades <b>outside your range</b>, your position becomes 100%
+      one asset and stops earning fees — a too-tight range can leave a fresh
+      token with effectively no liquidity within minutes of launch.<br>
+      • With <b>no price history</b>, you're guessing the range blind. Too
+      narrow and a normal early swing strands it; too wide and it behaves like
+      a standard pool anyway.<br>
+      • <b>For a first launch: use a standard pool, or a concentrated pool with
+      a very wide range.</b> Tight ranges are a tool for <i>managing</i> an
+      established token — not for <i>opening</i> a new one.<br>
+      • <b>Single-sided positions:</b> some concentrated pools let you deposit
+      only your token (no SOL) in a range above the current price — a staged
+      sell wall. A deliberate strategy, never a default. Understand it fully
+      first.</div>
+
+      <div class="ho-sec"><b>3 · Locking the liquidity.</b> Whether you lock or
+      burn the LP tokens you receive when the pool is created. Buyers check
+      this — unlocked liquidity is the classic rug vector (the creator can pull
+      it). Locking or burning is what signals you won't.</div>
+
+      <div class="ho-sec"><b>4 · Where to add it.</b> Each DEX has its own pool
+      creation flow — note which support concentrated liquidity:<br>
+      • <a href="https://meteora.ag" target="_blank">Meteora ↗</a> — DLMM pools
+      are concentrated-liquidity; also has simpler dynamic pools. Popular for
+      memecoin launches.<br>
+      • <a href="https://raydium.io" target="_blank">Raydium ↗</a> — standard
+      AMM pools plus concentrated (CLMM). The most widely integrated DEX on
+      Solana.<br>
+      • <a href="https://orca.so" target="_blank">Orca ↗</a> — Whirlpools are
+      concentrated-liquidity, with a clean, beginner-friendly interface.</div>
+
+      <div class="ho-sec"><b>📚 Learn the full math first — the LP Lab.</b>
+      The <a href="https://clucknorris.app" target="_blank">LP Lab on
+      clucknorris.app ↗</a> teaches liquidity, AMMs, impermanent loss, fee
+      structures, and concentrated liquidity in depth. Work through it before
+      you open a pool. The Hatchery stops at the mint on purpose — the launch
+      is yours, and it's worth doing slowly.</div>
+    </div>
+  </details>
+
+  <!-- Hatch -->
+  <div class="card">
+    <div id="feeBox" class="fee-box"></div>
+    <div class="toggle-row">
+      <input type="checkbox" id="ackBox"/>
+      <div class="toggle-text">
+        <span>I understand this creates a <b>real token on Solana mainnet</b>,
+        costs a small amount of SOL in network fees, and that authority
+        revocations are permanent.</span>
+      </div>
+    </div>
+    <div class="toggle-row">
+      <input type="checkbox" id="ackBox2"/>
+      <div class="toggle-text">
+        <span>I understand the Hatchery <b>only mints the token</b>. It is
+        <b>not tradable</b> until <b>I add liquidity myself</b> on a DEX — a
+        separate step that Cluck Norris does not perform. Cluck Norris provides
+        education for that step (the LP Lab), but the launch is mine to do.</span>
+      </div>
+    </div>
+    <button class="hatch-btn" id="hatchBtn" onclick="hatch()">🥚 HATCH TOKEN</button>
+    <div class="progress" id="progress"></div>
+  </div>
+
+  <!-- Result -->
+  <div class="card result" id="resultCard">
+    <div class="result-title">🐣 TOKEN HATCHED</div>
+    <div class="result-row"><span class="rk">Name:</span> <span id="rName"></span></div>
+    <div class="result-row"><span class="rk">Mint address:</span> <span id="rMint"></span></div>
+    <div class="result-row"><span class="rk">Solscan:</span> <a id="rScan" target="_blank">view token ↗</a></div>
+    <div class="result-row"><span class="rk">Transaction:</span> <a id="rTx" target="_blank">view on Solscan ↗</a></div>
+    <div class="handoff">
+      🥚 <b>You've HATCHED a token — you have NOT launched a project.</b>
+      It can't be traded until you add liquidity yourself — that's your next
+      step. The full <b>Launch Liquidity Guide</b> — starting ratio,
+      concentrated liquidity, where to add it — is on this page and now open
+      above. Read it before you add a single dollar.
+    </div>
+  </div>
+
+  <div class="footer-tag">
+    🐔 <a href="https://clucknorris.app">clucknorris.app</a> — THE HATCHERY · MINT-ONLY, NOT A LAUNCH
+  </div>
+
+</div>
+
+<script src="/vendor/solana-web3.iife.min.js"></script>
+<script>
+// ── Constants / state ────────────────────────────────────────────────────────
+const RPC_URL = '/api/helius-rpc';
+let walletPubkey = null;
+let activeWallet = null;       // { id, provider }
+let logoData = null;           // { base64, mime }
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function showError(msg) {
+  const el = document.getElementById('errorBox');
+  el.textContent = msg;
+  el.classList.add('show');
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  setTimeout(() => el.classList.remove('show'), 9000);
+}
+function setProgress(msg) {
+  const el = document.getElementById('progress');
+  if (msg) { el.textContent = msg; el.classList.add('show'); }
+  else el.classList.remove('show');
+}
+async function rpc(method, params) {
+  const r = await fetch(RPC_URL, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+  });
+  const d = await r.json();
+  if (d.error) throw new Error(d.error.message);
+  return d.result;
+}
+
+// ── Starting-price calculator ────────────────────────────────────────────────
+function fmtUsdBig(n) {
+  if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+  if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+  return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
+function fmtPriceUsd(p) {
+  if (p >= 1) return '$' + p.toFixed(4);
+  if (p >= 0.0001) return '$' + p.toFixed(8);
+  if (p > 0) return '$' + p.toExponential(3);
+  return '$0';
+}
+let calcPair = 'sol';
+function setPair(p) {
+  calcPair = p;
+  document.getElementById('pairSol').classList.toggle('active', p === 'sol');
+  document.getElementById('pairUsdc').classList.toggle('active', p === 'usdc');
+  // relabel the "quote in pool" field; keep its <input> child intact
+  document.getElementById('lblQuote').childNodes[0].nodeValue =
+    (p === 'sol' ? 'SOL' : 'USDC') + ' in the pool';
+  // the quote-price field only matters for SOL — USDC is ~$1
+  document.getElementById('lblQuotePrice').style.display = p === 'sol' ? '' : 'none';
+  calcStartPrice();
+}
+function calcStartPrice() {
+  const num = (id) => parseFloat((document.getElementById(id).value || '').replace(/[, ]/g, ''));
+  const tokens = num('calcTokens'), quote = num('calcQuote'), supply = num('calcSupply');
+  const quotePrice = calcPair === 'usdc' ? 1 : num('calcQuotePrice'); // USDC ≈ $1
+  const out = document.getElementById('calcOut');
+  if (!(tokens > 0) || !(quote > 0) || !(quotePrice > 0)) {
+    out.innerHTML = "Enter the amounts to see your token's opening price.";
+    return;
+  }
+  const priceUsd = (quote / tokens) * quotePrice;
+  const pairName = calcPair === 'sol' ? 'SOL' : 'USDC';
+  let html = "Opening price: <b>" + fmtPriceUsd(priceUsd) + "</b> per token";
+  if (supply > 0) html += "<br>Opening market cap (FDV): <b>$" + fmtUsdBig(priceUsd * supply) + "</b>";
+  html += "<br><span class='calc-note'>You'd deposit " + fmtUsdBig(quote) + " " + pairName
+        + " (~$" + fmtUsdBig(quote * quotePrice) + ") of liquidity.</span>";
+  out.innerHTML = html;
+}
+
+// ── Wallet connect (same pattern as the Airdrop tool) ────────────────────────
+const WALLETS = {
+  phantom:  { name: 'Phantom',  download: 'https://phantom.app',   detect: () => window.phantom?.solana || (window.solana?.isPhantom ? window.solana : null) },
+  solflare: { name: 'Solflare', download: 'https://solflare.com',  detect: () => window.solflare || (window.solana?.isSolflare ? window.solana : null) },
+  backpack: { name: 'Backpack', download: 'https://backpack.app',  detect: () => (window.backpack?.isBackpack ? window.backpack : null) || (window.solana?.isBackpack ? window.solana : null) },
+  okx:      { name: 'OKX',      download: 'https://okx.com/web3',  detect: () => window.okxwallet?.solana || window.okxwallet || null },
+  coinbase: { name: 'Coinbase', download: 'https://coinbase.com/wallet', detect: () => window.coinbaseSolana || window.coinbaseWalletSolana || null },
+  trust:    { name: 'Trust',    download: 'https://trustwallet.com', detect: () => window.trustwallet?.solana || (window.solana?.isTrust ? window.solana : null) },
+  glow:     { name: 'Glow',     download: 'https://glow.app',      detect: () => window.glowSolana || window.glow?.solana || (window.solana?.isGlow ? window.solana : null) },
+  exodus:   { name: 'Exodus',   download: 'https://exodus.com',    detect: () => window.exodus?.solana || null },
+  bitget:   { name: 'Bitget',   download: 'https://web3.bitget.com', detect: () => window.bitkeep?.solana || window.bitgetWallet?.solana || (window.solana?.isBitKeep ? window.solana : null) },
+  brave:    { name: 'Brave',    download: 'https://brave.com/wallet', detect: () => window.braveSolana || (window.solana?.isBraveWallet ? window.solana : null) },
+  jupiter:  { name: 'Jupiter',  download: 'https://jup.ag/wallet', detect: () => window.jupiterWallet || window.jupiter || (window.solana?.isJupiter ? window.solana : null) },
+};
+// Mobile on-ramp: on mobile with NO wallet injected, offer one-tap deep links
+// that OPEN this page inside the wallet's browser (pure navigation — nothing is
+// signed/shared by the link; the injected connect+sign flow runs once inside).
+function initMobileDeepLinks() {
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  if (!isMobile) return;
+  const injected = !!(window.solana || window.phantom?.solana || window.solflare || window.backpack
+    || window.okxwallet || window.glowSolana || window.exodus?.solana || window.coinbaseSolana || window.trustwallet?.solana);
+  if (injected) return;
+  const el = document.getElementById('mobileConnect'), picker = document.getElementById('walletPicker');
+  if (!el) return;
+  const url = encodeURIComponent(location.href), ref = encodeURIComponent(location.origin);
+  el.innerHTML =
+    '<div style="font-family:monospace;font-size:12px;color:#FCD34D;line-height:1.5">📱 On mobile? Open this page inside your wallet to connect:</div>'
+    + '<a class="wallet-btn phantom" style="text-decoration:none" href="https://phantom.app/ul/browse/' + url + '?ref=' + ref + '">🔮 Open in Phantom</a>'
+    + '<a class="wallet-btn solflare" style="text-decoration:none" href="https://solflare.com/ul/v1/browse/' + url + '?ref=' + ref + '">☀️ Open in Solflare</a>'
+    + '<div style="font-family:monospace;font-size:10px;color:#9CA3AF;line-height:1.5">Opens this page in the wallet’s built-in browser. Nothing is signed or shared by the link.</div>';
+  el.style.display = 'flex';
+  if (picker) picker.style.display = 'none';
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initMobileDeepLinks);
+else initMobileDeepLinks();
+function syncWalletUi() {
+  const picker = document.getElementById('walletPicker');
+  const info = document.getElementById('walletInfo');
+  if (walletPubkey) {
+    picker.style.display = 'none';
+    info.classList.add('show');
+    document.getElementById('walletInfoAddr').textContent = '✓ ' + walletPubkey;
+  } else {
+    picker.style.display = 'flex';
+    info.classList.remove('show');
+  }
+}
+async function connectWallet(id) {
+  const w = WALLETS[id];
+  const provider = w && w.detect();
+  if (!provider) { showError(`${w ? w.name : 'Wallet'} not detected. Install it and refresh.`); return; }
+  try {
+    const resp = await provider.connect();
+    const pk = resp?.publicKey?.toString?.() || provider.publicKey?.toString?.();
+    if (!pk) throw new Error('no public key returned');
+    walletPubkey = pk;
+    activeWallet = { id, provider };
+    syncWalletUi();
+    loadHatcheryConfig();   // re-check the fee with the connected wallet (holder waiver)
+  } catch (e) { showError(`${w.name} connection failed: ${e.message || e}`); }
+}
+function disconnectWallet() {
+  try { activeWallet?.provider?.disconnect?.(); } catch (e) {}
+  walletPubkey = null; activeWallet = null;
+  syncWalletUi();
+  loadHatcheryConfig();
+}
+
+// ── Logo handling ────────────────────────────────────────────────────────────
+function onLogoPick(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  if (file.size > 100 * 1024) {
+    showError(`Logo is ${(file.size / 1024).toFixed(0)} KB — must be 100 KB or smaller. Compress it and try again.`);
+    input.value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    const dataUrl = reader.result;             // data:image/png;base64,XXXX
+    const comma = dataUrl.indexOf(',');
+    logoData = { base64: dataUrl.slice(comma + 1), mime: file.type };
+    const prev = document.getElementById('logoPreview');
+    prev.src = dataUrl;
+    prev.style.display = 'block';
+    document.getElementById('logoHint').textContent = file.name + ' — ' + (file.size / 1024).toFixed(0) + ' KB';
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── Confirm a submitted transaction ──────────────────────────────────────────
+async function confirmTx(signature) {
+  for (let i = 0; i < 40; i++) {
+    const st = await rpc('getSignatureStatuses', [[signature]]);
+    const s = st?.value?.[0];
+    if (s) {
+      if (s.err) throw new Error('Transaction failed on-chain');
+      if (s.confirmationStatus === 'confirmed' || s.confirmationStatus === 'finalized') return;
+    }
+    await new Promise(r => setTimeout(r, 1500));
+  }
+  throw new Error('Timed out waiting for confirmation — check Solscan');
+}
+
+// ── Hatch ────────────────────────────────────────────────────────────────────
+// ── Mint fee + payment method ────────────────────────────────────────────────
+// The page asks the server what fee is configured and renders the right UI: a
+// "waived" banner for big CLKN holders, a notice for a single method, or a
+// SOL/CLKN chooser when both are enabled. Paying in CLKN is the cheaper path
+// and the UI says so loudly. The chosen method rides along on the build.
+let payMethod = 'sol';
+function setPay(m) {
+  payMethod = m;
+  const s = document.getElementById('paySol'), c = document.getElementById('payClkn');
+  if (s) s.classList.toggle('active', m === 'sol');
+  if (c) c.classList.toggle('active', m === 'clkn');
+}
+async function loadHatcheryConfig() {
+  const box = document.getElementById('feeBox');
+  try {
+    const cfg = await (await fetch('/api/hatchery/config' + (walletPubkey ? '?wallet=' + walletPubkey : ''))).json();
+    if (!cfg || (!cfg.solEnabled && !cfg.clknEnabled)) { box.innerHTML = ''; return; }
+    const holder = Number(cfg.holderThreshold || 0);
+
+    if (cfg.feeWaived) {
+      payMethod = 'sol';
+      box.innerHTML = '<div class="fee-title">MINT FEE — WAIVED ✓</div>'
+        + '<div class="fee-single">You hold ' + holder.toLocaleString()
+        + '+ CLKN — your mint is free. You pay only the small Solana network fee.</div>';
+      return;
+    }
+
+    const save = Number(cfg.clknSavingPct || 0);
+    const clknAmt = Number(cfg.feeClkn).toLocaleString();
+    let h;
+    if (cfg.solEnabled && cfg.clknEnabled) {
+      payMethod = 'sol';
+      h = '<div class="fee-title">MINT FEE — CHOOSE PAYMENT</div>'
+        + '<div class="fee-pick">Pay with:'
+        + '<button type="button" class="fee-btn active" id="paySol" onclick="setPay(\'sol\')">' + cfg.feeSol + ' SOL</button>'
+        + '<button type="button" class="fee-btn fee-btn-clkn" id="payClkn" onclick="setPay(\'clkn\')">≈' + clknAmt + ' CLKN'
+        + (save > 0 ? ' <span class="fee-save">SAVE ' + save + '%</span>' : '') + '</button></div>';
+      if (save > 0) {
+        h += '<div class="fee-tip">💡 <b>Pay in CLKN — save ' + save + '%.</b> The CLKN fee is worth only ≈'
+          + cfg.feeClknSol + ' SOL of value, versus ' + cfg.feeSol + ' SOL paid in plain SOL. '
+          + 'No CLKN yet? A quick buy of about ' + cfg.feeClknSol + ' SOL’s worth covers your whole mint fee — '
+          + 'you pay less overall, and if you can launch a token you can certainly buy one.</div>';
+      }
+    } else if (cfg.solEnabled) {
+      payMethod = 'sol';
+      h = '<div class="fee-title">MINT FEE</div>'
+        + '<div class="fee-single">' + cfg.feeSol + ' SOL — included in your mint transaction.</div>';
+    } else {
+      payMethod = 'clkn';
+      h = '<div class="fee-title">MINT FEE</div>'
+        + '<div class="fee-single">≈' + clknAmt + ' CLKN — included in your mint transaction.</div>';
+    }
+    let note = 'The fee rides inside your single mint transaction';
+    if (cfg.clknEnabled) note += '; the CLKN amount tracks live price and goes to the Cluck Norris treasury';
+    note += '.';
+    if (holder > 0) note += ' Hold ' + holder.toLocaleString() + '+ CLKN and your mint is free'
+      + (walletPubkey ? '.' : ' — connect your wallet to check.');
+    h += '<div class="fee-note">' + note + '</div>';
+    box.innerHTML = h;
+  } catch (e) { box.innerHTML = ''; }
+}
+loadHatcheryConfig();
+
+async function hatch() {
+  if (!walletPubkey) { showError('Connect your wallet first.'); return; }
+  const name = document.getElementById('tokenName').value.trim();
+  const symbol = document.getElementById('tokenSymbol').value.trim();
+  const decimals = document.getElementById('tokenDecimals').value;
+  const supply = document.getElementById('tokenSupply').value.trim();
+  const description = document.getElementById('tokenDesc').value.trim();
+  const revokeMint = document.getElementById('revokeMint').checked;
+  const revokeFreeze = document.getElementById('revokeFreeze').checked;
+
+  if (!name) { showError('Token name is required.'); return; }
+  if (!symbol) { showError('Token symbol is required.'); return; }
+  if (!/^\d+$/.test(supply) || BigInt(supply) <= 0n) { showError('Total supply must be a whole number greater than 0.'); return; }
+  if (!logoData) { showError('Choose a logo image.'); return; }
+  if (!document.getElementById('ackBox').checked || !document.getElementById('ackBox2').checked) {
+    showError('Please check both acknowledgement boxes before hatching.'); return;
+  }
+
+  const btn = document.getElementById('hatchBtn');
+  btn.disabled = true;
+  try {
+    setProgress('Uploading logo + metadata to Arweave…');
+    const buildRes = await fetch('/api/hatchery/build', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        creator: walletPubkey, name, symbol, description,
+        decimals: Number(decimals), supply,
+        imageBase64: logoData.base64, imageMime: logoData.mime,
+        revokeMint, revokeFreeze, cluster: 'mainnet-beta', payWith: payMethod,
+      }),
+    });
+    const built = await buildRes.json();
+    if (!buildRes.ok) throw new Error(built.error || 'Build failed');
+
+    setProgress('Approve the transaction in your wallet…');
+    const txBytes = Uint8Array.from(atob(built.txBase64), c => c.charCodeAt(0));
+    const tx = solanaWeb3.Transaction.from(txBytes);
+    const mintKp = solanaWeb3.Keypair.fromSecretKey(
+      Uint8Array.from(atob(built.mintSecret), c => c.charCodeAt(0))
+    );
+    // Phantom's Lighthouse flags multi-signer transactions unless the wallet signs
+    // FIRST — so the wallet signs, THEN the mint keypair partial-signs (per Phantom
+    // support), and we submit the fully-signed transaction ourselves.
+    const signedTx = await activeWallet.provider.signTransaction(tx);
+    signedTx.partialSign(mintKp);
+    const signature = await rpc('sendTransaction', [
+      btoa(String.fromCharCode(...signedTx.serialize())),
+      { encoding: 'base64', preflightCommitment: 'confirmed', maxRetries: 3 },
+    ]);
+
+    setProgress('Confirming on-chain…');
+    await confirmTx(signature);
+
+    // Report the mint so it's announced in the community Telegram room (fire-and-forget).
+    fetch('/api/hatchery/minted', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ signature, mintAddress: built.mintAddress, name, symbol }),
+    }).catch(() => {});
+
+    setProgress('');
+    document.getElementById('rName').textContent = name + ' (' + symbol + ')';
+    document.getElementById('rMint').textContent = built.mintAddress;
+    document.getElementById('rScan').href = 'https://solscan.io/token/' + built.mintAddress;
+    document.getElementById('rTx').href = 'https://solscan.io/tx/' + signature;
+    document.getElementById('resultCard').classList.add('show');
+    document.getElementById('lpGuide').open = true;
+    document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+  } catch (e) {
+    setProgress('');
+    showError('Hatch failed: ' + (e.message || e));
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// Ask Cluck — contextual help so a beginner can clarify any term in place.
+// Reuses /api/ask-cluck (server rate-limited). Answer rendered as plain text.
+async function askCluck() {
+  const inp = document.getElementById('askInput');
+  const btn = document.getElementById('askBtn');
+  const out = document.getElementById('askAnswer');
+  if (!inp || !btn || !out) return;
+  const q = (inp.value || '').trim();
+  if (q.length < 3) return;
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = '…';
+  out.style.display = 'block'; out.textContent = 'Cluck is thinking…';
+  try {
+    const r = await fetch('/api/ask-cluck', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        question: q,
+        context: 'The Hatchery — a guided SPL token creator. Mint-time decisions: name, symbol, supply, decimals, mint/freeze authority. It stops before liquidity on purpose.'
+      })
+    });
+    const d = await r.json();
+    const ans = (d && d.success && d.answer) ? d.answer : (d && d.error) ? d.error : 'Cluck couldn’t answer that one — try the school or Telegram.';
+    out.textContent = String(ans).replace(/\*\*/g, '').replace(/^\s*[-*]\s/gm, '• ');
+  } catch (e) {
+    out.textContent = 'Network hiccup — try again in a moment.';
+  }
+  btn.disabled = false; btn.textContent = orig;
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,121 @@
+# Google Play listing package — STRIPPED Cluck Norris build ("play" mode).
+# Publisher: CLKN Productions LLC.  Package: app.clucknorris.edu.
+# This build EXCLUDES (via store-mode "play"): Bags.fm feed, airdrop/claim,
+# buy-CLKN / token promo, hackathon & grant surfaces, slots, CLKN payments.
+# It KEEPS: the school, the library, and the free read-only research tools.
+# v1 has NO wallet connect / holder-gate on either store (deferred out of v1).
+#
+# NOTE: this listing copy is deliberately education-forward and mentions NO
+# token, purchase, airdrop, or investment language — Google's crypto policy
+# dislikes token promotion, and none of it is needed to sell the app.
+
+store_listing:
+  # Play title max 30 chars; short_description max 80; full_description max 4000.
+  title: "Cluck Norris: Crypto School"          # 27 chars
+  short_description: "An AI crypto tutor and school. Learn wallets, DeFi, and how to stay safe."  # 72 chars, no promo/price words, no slang
+  full_description: |
+    "No participation trophies. No hand-holding. Just hard knocks."
+
+    Cluck Norris is a free crypto school built to keep beginners alive long enough
+    to actually understand crypto — before it teaches them the hard way. New here?
+    Tell Cluck where you're starting and he points you to the right first step.
+
+    YOUR AI TUTOR — free, no signup, no wallet:
+    - Ask Cluck: a tough-love AI crypto tutor right on the home screen and inside
+      every lesson — ask anything, get a straight answer
+    - "Where do I start?": pick your path — brand new, know the basics, liquidity
+      pools, token research — and jump straight in
+
+    THE SCHOOL:
+    - The Incubator: beginner lessons on wallets, tokens, on/off-ramps, DEXs, and liquidity
+    - School of Hard Knocks: progressive lessons with a Freshman-to-Emeritus belt ranking
+    - LP Lab: a hands-on liquidity course with interactive calculators
+    - Seven languages, saved progress, and read-aloud
+
+    FREE SAFETY TOOLS — read-only, no wallet connection:
+    - Wallet Safety Checkup: scan any Solana address for lingering token approvals, honeypots, and freeze/mint risk
+    - Listing Checkup: sanity-check a token's on-chain details before you touch it
+
+    Guardrails first: the app never takes custody, never asks for your seed phrase,
+    and shows a stay-safe checklist on every action. Learn the game before it costs you.
+
+  category: "Education"
+  contact_email: "chuck@clucknorris.app"
+  website: "https://clucknorris.app"
+  privacy_policy: "https://clucknorris.app/privacy/store"   # store-scoped: no wallet/payments/token, matches the stripped build + Data Safety
+  # Play does not surface a Terms field the way the dApp Store does, but keep
+  # https://clucknorris.app/terms/store linked from the in-app footer (store-scoped terms).
+
+assets:
+  icon: "./icon.png"                        # 512x512 (reused from the dApp Store package)
+  feature_graphic: "./feature-graphic.png"  # 1024x500 (Play spec)
+  screenshots: "TODO — capture >=2 PHONE screenshots of the STRIPPED build once store-mode play is deployed; do NOT reuse the dApp Store shots (they show Bags feed / full app)."
+
+release:
+  package_name: "app.clucknorris.edu"
+  target_sdk: 36
+  min_sdk: 24
+  artifact: "Android App Bundle (.aab), signed with the clkn-edu upload key; use Google Play App Signing."
+  whats_new: "Initial release — the free Cluck Norris crypto school, now on Google Play."
+
+# ── Data Safety form (MANDATORY on Play) — DRAFT, verify each answer ────────
+# Answer honestly against the actual stripped-build runtime before submitting.
+data_safety:
+  # Authoritative inventory from the main repo (the code that actually runs),
+  # relayed 2026-09-11. Mapped to Google's Data Safety data-type taxonomy below.
+  collects_or_shares_data: true
+  data_types:
+    - type: "App activity — app interactions + lesson completions"
+      google_category: "App activity → App interactions"
+      collected: true
+      purpose: "App functionality; Analytics"
+      shared_with_third_parties: false      # first-party only; NO analytics SDK present
+      user_can_request_deletion: true
+      optional: false
+    - type: "Device or other IDs — random app-generated session id"
+      google_category: "Device or other IDs"
+      collected: true
+      purpose: "App functionality (issues + verifies the completion certificate)"
+      shared_with_third_parties: false
+      user_can_request_deletion: true
+      optional: false
+      note: >
+        App-generated random id (Firebase-installation-style), NOT a device or
+        advertising ID and not tied to a real-world identity; 120-day idle expiry.
+        Under Google's 'Device or other IDs' definition this is declared Yes; the
+        privacy policy discloses it either way.
+    - type: "App activity — other user-generated content (Ask Cluck questions + answer reports)"
+      google_category: "App activity → Other user-generated content"
+      collected: true
+      purpose: "App functionality (AI tutoring); abuse/content reporting"
+      shared_with_third_parties: true
+      shared_with: "Anthropic (AI tutor + translation); read-aloud text goes to ElevenLabs"
+      optional: true
+      note: "No user identifier is attached to questions or reports."
+  # NOT 'collected' — ephemeral processing (per Google's ephemeral-processing rule):
+  #   A public token/address you paste into a research tool is sent once to a data
+  #   provider to run the lookup, not stored and not tied to you. Providers called:
+  #   Helius (Wallet Checkup); DexScreener, GeckoTerminal, CoinGecko, Solscan,
+  #   Jupiter token list, RugCheck (Listing Checkup).
+  security_practices:
+    encrypted_in_transit: true            # all traffic is HTTPS
+    users_can_request_deletion: true      # email clucknorrisapp@gmail.com (or chuck@clucknorris.app, which forwards there) with the certificate id
+    committed_to_play_families_policy: false
+  data_NOT_collected:
+    - "Name, email, phone number"
+    - "Precise or approximate location"
+    - "Contacts, photos, files"
+    - "Payment or financial account info (no in-app purchases; no card/bank data)"
+    - "Wallet address (no wallet connect / holder-gate in this build)"
+    - "Private keys / seed phrases (never requested)"
+    - "Advertising ID, ads SDK, or third-party analytics SDK (none present)"
+
+# ── Content rating questionnaire notes ─────────────────────────────────────
+content_rating:
+  suggested_category: "Reference / Education"
+  answer_honestly:
+    - "No gambling / simulated gambling (slots were dropped from this build)."
+    - "No real-money transactions, no in-app purchases."
+    - "No user-generated content / social features."
+    - "Mascot art depicts a cartoon character holding a stylized stick of dynamite and an ammo bandolier — stylized brand art, not realistic violence. Disclose it; it may nudge the age rating slightly."
+    - "References cryptocurrency/finance concepts (educational)."
