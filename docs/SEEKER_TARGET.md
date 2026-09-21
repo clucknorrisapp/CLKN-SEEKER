@@ -12,7 +12,29 @@ it risks the listing that already exists. The seeker target:
 - **bundles** its frontend (no `server.url`), so the app works without the website being reachable;
 - carries **its own appId, `app.clucknorris.seeker`**, so it ships alongside the live listing and
   both can be installed on the same device while the new one is tested;
-- consumes a **pinned, checksummed artifact** exactly like `googlePlay` and `ios`.
+- consumes a **pinned, checksummed artifact** exactly like `googlePlay` and `ios` — but is
+  **content-scanned by different rules**, see below.
+
+### ⚠️ The content rules are PER-VARIANT. Do not re-unify them.
+
+`prep-dist` scans an extracted bundle for content that variant must never ship, and `seeker`
+routes through the same `store` code path as `googlePlay`/`ios` because it wants the same pin and
+checksum. It must NOT inherit their content rules.
+
+The education variants forbid wallet-connect, on-chain signing, the CLKN mint and buy/swap links.
+**The Seeker edition ships all of those, because it is the full product.** When the two shared one
+list, a real `store-edition-seeker-0.1.0.tgz` hit it five times — so `npm run build:seeker` would
+have refused its own correct artifact, and nothing would have surfaced that until the night the
+release tag was pushed.
+
+The seeker rules instead forbid the **operator surfaces** (`docs/SEEKER_TOOLS_BUILD.md` §2): desk
+work, payout controls and owner-only screens. They match a bundled FILE named after one, or a
+quoted ABSOLUTE PATH that could navigate to one — not a bare substring. A substring version
+refused a correct bundle on its first run because the word `jupverify` appears in a *comment* in
+the shared `cluck-util.js`. A guard that fires on prose is worse than none: it teaches whoever
+hits it to weaken it.
+
+`node scripts/prep-dist-guard-test.mjs` (CI) pins both rule sets in both directions.
 
 It deliberately has **no `appendUserAgent` marker**. Those exist as backend defense-in-depth for
 the education-only bundles, whose excluded endpoints the server refuses. The Seeker edition is the
