@@ -1,8 +1,26 @@
 # CluckMWA — the native Mobile Wallet Adapter plugin
 
-Status: written, **not compiled** (no Android SDK in the session that wrote it — see
-"What is unverified" at the bottom before trusting any of this on a real device without the
-checklist). Branch: `claude/cluck-mwa-plugin`.
+Status: **COMPILES, and is present in a real APK** — verified 2026-09-21 by the `android build`
+workflow (run 35598997202, `assembleDebug` on the `solana` target, green in 1m50s). This replaces
+the previous "written, not compiled" status, which stood because no session container had an
+Android SDK.
+
+What that run actually proves, checked against the produced artifact rather than inferred from a
+green tick:
+
+| Claim | How it was checked |
+|---|---|
+| The Kotlin compiles | `assembleDebug` succeeded; `MainActivity.java` *imports* `CluckMWAPlugin`, so javac would have failed had kotlinc not produced the class |
+| The plugin is in the shipped app | `app.clucknorris.school.mwa.CluckMWAPlugin` found in `classes6.dex`/`classes7.dex` of the debug APK |
+| Every bridged method survived | `connectOrReauthorize`, `signMessages`, `signTransactions`, `signAndSendTransactions`, `deauthorize` all present as dex entries |
+| The MWA clientlib resolved | 213 `com/solana/mobilewalletadapter` references in the dex, including `MobileWalletAdapter`, `ActivityResultSender`, `Blockchain`, `Solana` |
+
+⛔ **It does NOT prove a wallet connects, or that anything signs.** That still needs a real device
+with a real wallet — the 10-step checklist under "What is unverified" below is unchanged and is
+still entirely unexercised. A compiled bridge that has never been handed a wallet is exactly the
+kind of thing this repo has shipped broken before.
+
+Branch: `claude/cluck-mwa-plugin` (plugin), `claude/android-ci-compile-check` (the workflow).
 
 ## Why this exists
 
