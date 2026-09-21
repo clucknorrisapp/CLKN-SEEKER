@@ -2,7 +2,7 @@
 // prep-dist.mjs — fill dist/ with the right web content for a build target.
 //
 //   node scripts/prep-dist.mjs solana   → minimal placeholder (server.url overrides it)
-//   node scripts/prep-dist.mjs store     → the pinned Store-edition release for the
+//   node scripts/prep-dist.mjs store     → the pinned Store/Seeker-edition release for the
 //                                          current CLKN_TARGET (googlePlay | ios)
 //
 // The Store edition is a SEPARATE, versioned frontend release built in the main
@@ -50,7 +50,11 @@ if (mode === "solana") {
 }
 
 if (mode === "store") {
-  const variant = target === "ios" ? "ios" : "google"; // googlePlay -> google
+  // googlePlay -> google, ios -> ios, seeker -> seeker. The seeker edition goes through the
+  // SAME pinned + checksummed path as the store editions, on purpose: the reason pinning
+  // exists ("a routine website change can never alter the installed app") applies just as
+  // hard to a dApp Store app, and arguably harder — it carries a wallet.
+  const variant = target === "ios" ? "ios" : target === "seeker" ? "seeker" : "google";
   let lock = {};
   try { lock = JSON.parse(readFileSync(LOCK, "utf8")); } catch {}
   const pin = lock?.[variant];
