@@ -1,0 +1,83 @@
+# Does the Android side actually COMPILE?
+#
+# Written 2026-09-21. Until now nothing had ever compiled the CluckMWA Kotlin plugin — it was
+# written, reviewed against the documented clientlib API, and never built once, because no
+# session container has an Android SDK. "It should compile" is not a fact, and the CLOCK IN
+# submission needs a functional APK on 2026-10-09.
+#
+# ⚠️ This job deliberately builds the SOLANA target, not the seeker one. The seeker target
+# refuses to build without a pinned, checksummed release (a tag only the owner can push) and
+# that refusal is correct — faking a pin to make CI green would be the exact false success this
+# project keeps paying for. But the plugin lives in android/app/src/main, so ANY assemble
+# compiles it. This answers the compile question today without weakening the pin.
+#
+# What a green run here does and does not mean:
+#   ✅ the Kotlin compiles, the clientlib resolves, the plugin registers, an APK is produced
+#   ❌ it does NOT mean the wallet connects, or that anything signs — that needs a real device
+#      with a real wallet, and is the 10-step checklist in docs/MWA_PLUGIN.md
+name: android build
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "android/**"
+      - "capacitor.config.ts"
+      - "package.json"
+      - "package-lock.json"
+      - "scripts/prep-dist.mjs"
+      - ".github/workflows/android-build.yml"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      # ubuntu-latest ships the Android SDK; this just puts the tooling on PATH and
+      # accepts licences so Gradle does not stop to ask.
+      - uses: android-actions/setup-android@v3
+
+      - name: install deps
+        run: npm ci
+
+      # A placeholder dist is all the solana target needs — its capacitor config points at the
+      # live site, so the bundle is not what is under test here. The Kotlin is.
+      - name: prepare web assets
+        run: npm run prep:solana
+
+      - name: capacitor sync
+        run: npx cap sync android
+
+      - name: assemble debug APK
+        working-directory: android
+        run: ./gradlew --no-daemon assembleDebug
+
+      # The whole point: something a human can install on a phone.
+      - name: upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: cluck-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      # Runs even when assemble fails: a Kotlin error is the single most useful thing this
+      # workflow can report, and it should not be buried in a collapsed log group.
+      - name: compile errors, if any
+        if: failure()
+        working-directory: android
+        run: ./gradlew --no-daemon compileDebugKotlin --stacktrace 2>&1 | tail -80 || true
