@@ -45,87 +45,12 @@ function writePlaceholder(note) {
   );
 }
 
-if (mode === "solana") {
-  // FULL edition loads the live site via server.url; dist/ is just a required stub.
-  resetDist();
-  writePlaceholder("solana target: content loads remotely via capacitor server.url");
-  console.log("prep-dist: wrote placeholder dist/ for the solana (remote) target.");
-  process.exit(0);
-}
-
-if (mode === "store") {
-  // googlePlay -> google, ios -> ios, seeker -> seeker. The seeker edition goes through the
-  // SAME pinned + checksummed path as the store editions, on purpose: the reason pinning
-  // exists ("a routine website change can never alter the installed app") applies just as
-  // hard to a dApp Store app, and arguably harder — it carries a wallet.
-  const variant = target === "ios" ? "ios" : target === "seeker" ? "seeker" : "google";
-  let lock = {};
-  try { lock = JSON.parse(readFileSync(LOCK, "utf8")); } catch {}
-  const pin = lock?.[variant];
-
-  // Require a fully pinned + checksummed release. sourceCommit is recommended for
-  // traceability back to the exact main-repo build.
-  if (!pin || !pin.url || !pin.version || !pin.sha256) {
-    console.error(
-      `\nprep-dist: Store-edition release for "${variant}" is not fully pinned.\n` +
-      `store-edition.lock needs { version, url, sha256 } (sourceCommit recommended), e.g.:\n` +
-      `  "${variant}": { "version": "1.0.0", "url": "https://…/store-edition-${variant}-1.0.0.tgz",\n` +
-      `                 "sha256": "<hex>", "sourceCommit": "<main-repo commit sha>" }\n` +
-      `Refusing to build a store target without a pinned, checksummed release.\n`
-    );
-    process.exit(1);
-  }
-
-  const commitNote = pin.sourceCommit ? ` (main@${String(pin.sourceCommit).slice(0, 9)})` : "";
-  console.log(`prep-dist: fetching Store-edition ${variant} v${pin.version}${commitNote} …`);
-  const res = await fetch(pin.url);
-  if (!res.ok) { console.error(`prep-dist: download failed HTTP ${res.status}`); process.exit(1); }
-  const bytes = Buffer.from(await res.arrayBuffer());
-
-  // Verify checksum BEFORE we touch dist/ — never bundle an unverified artifact.
-  const digest = createHash("sha256").update(bytes).digest("hex");
-  if (digest.toLowerCase() !== String(pin.sha256).toLowerCase()) {
-    console.error(
-      `prep-dist: CHECKSUM MISMATCH — refusing to bundle.\n` +
-      `  expected ${pin.sha256}\n  got      ${digest}\n`
-    );
-    process.exit(1);
-  }
-
-  resetDist();
-  const tgz = join(ROOT, ".store-edition.tgz");
-  writeFileSync(tgz, bytes);
-  // Artifact is a .tgz whose single top-level dir holds the built site.
-  execFileSync("tar", ["-xzf", tgz, "-C", DIST, "--strip-components=1"], { stdio: "inherit" });
-  rmSync(tgz, { force: true });
-  if (!existsSync(join(DIST, "index.html"))) {
-    console.error("prep-dist: extracted release has no index.html at root — wrong artifact shape?");
-    process.exit(1);
-  }
-
-  // Defense-in-depth: independently scan the extracted bundle for content that variant
-  // must never carry. The main repo runs its OWN allow-list verifier, but the wrapper must
-  // not trust that blindly — a gap there once shipped a live Jupiter swap + wallet-connect +
-  // token-referral into the store build, and only a checksum was verified here.
-  //
-  // ⚠️ THE RULES ARE PER-VARIANT, and getting this wrong breaks a build in either direction.
-  //
-  // The list below started life as "forbidden content, full stop", written when the only
-  // bundled variants were the EDUCATION-ONLY store editions. When the `seeker` variant was
-  // added it was routed through this same code path — correctly, because it wants the pin and
-  // the checksum — but it inherited these patterns too, and **the Seeker edition legitimately
-  // ships every one of the wallet ones.** It is the full product: wallet-connect, signing,
-  // the CLKN mint. Measured against a real `store-edition-seeker-0.1.0.tgz` built from the
-  // main repo, the education list hits 5 times (airdrop-engine.js, cluck-gate.js,
-  // cluck-wallet.js and the app bundle), so `npm run build:seeker` could never have
-  // succeeded — not for a missing tag, but by refusing its own correct artifact. That would
-  // have surfaced the night the release tag was pushed.
-  //
-  // So: education variants keep the original list unchanged. The seeker variant gets its own,
-  // and it is NOT empty — an unguarded variant is how the store gap happened in the first
-  // place. What must never reach a phone is the OPERATOR surface (docs/SEEKER_TOOLS_BUILD.md
-  // §2 "Deliberately NOT in the app"): desk work, payout controls and owner-only screens. A
-  // hit there means the main repo's excludeKeys prune regressed.
+// The bundle content scan, shared by BOTH consumers: the pinned `store` path and the unpinned
+// `seeker-dev` path. It lives here as ONE function on purpose. "The same logic written twice and
+// fixed once" is this project's most expensive recurring bug, and a dev build that skipped a
+// check the release build makes would be exactly that shape — you would test a bundle the real
+// build would have refused.
+function scanBundle(variant) {
   const FORBIDDEN_EDUCATION = [
     ["buy/swap link (jup.ag/swap)", /jup\.ag\/swap/i],
     ["CLKN mint address (token funnel)", /DW6DF2mjtyx67vcNmMhFm9XdxAwREurorghZcS3CBAGS/],
@@ -210,6 +135,90 @@ if (mode === "store") {
     }
   };
   scan(DIST);
+}
+
+if (mode === "solana") {
+  // FULL edition loads the live site via server.url; dist/ is just a required stub.
+  resetDist();
+  writePlaceholder("solana target: content loads remotely via capacitor server.url");
+  console.log("prep-dist: wrote placeholder dist/ for the solana (remote) target.");
+  process.exit(0);
+}
+
+if (mode === "store") {
+  // googlePlay -> google, ios -> ios, seeker -> seeker. The seeker edition goes through the
+  // SAME pinned + checksummed path as the store editions, on purpose: the reason pinning
+  // exists ("a routine website change can never alter the installed app") applies just as
+  // hard to a dApp Store app, and arguably harder — it carries a wallet.
+  const variant = target === "ios" ? "ios" : target === "seeker" ? "seeker" : "google";
+  let lock = {};
+  try { lock = JSON.parse(readFileSync(LOCK, "utf8")); } catch {}
+  const pin = lock?.[variant];
+
+  // Require a fully pinned + checksummed release. sourceCommit is recommended for
+  // traceability back to the exact main-repo build.
+  if (!pin || !pin.url || !pin.version || !pin.sha256) {
+    console.error(
+      `\nprep-dist: Store-edition release for "${variant}" is not fully pinned.\n` +
+      `store-edition.lock needs { version, url, sha256 } (sourceCommit recommended), e.g.:\n` +
+      `  "${variant}": { "version": "1.0.0", "url": "https://…/store-edition-${variant}-1.0.0.tgz",\n` +
+      `                 "sha256": "<hex>", "sourceCommit": "<main-repo commit sha>" }\n` +
+      `Refusing to build a store target without a pinned, checksummed release.\n`
+    );
+    process.exit(1);
+  }
+
+  const commitNote = pin.sourceCommit ? ` (main@${String(pin.sourceCommit).slice(0, 9)})` : "";
+  console.log(`prep-dist: fetching Store-edition ${variant} v${pin.version}${commitNote} …`);
+  const res = await fetch(pin.url);
+  if (!res.ok) { console.error(`prep-dist: download failed HTTP ${res.status}`); process.exit(1); }
+  const bytes = Buffer.from(await res.arrayBuffer());
+
+  // Verify checksum BEFORE we touch dist/ — never bundle an unverified artifact.
+  const digest = createHash("sha256").update(bytes).digest("hex");
+  if (digest.toLowerCase() !== String(pin.sha256).toLowerCase()) {
+    console.error(
+      `prep-dist: CHECKSUM MISMATCH — refusing to bundle.\n` +
+      `  expected ${pin.sha256}\n  got      ${digest}\n`
+    );
+    process.exit(1);
+  }
+
+  resetDist();
+  const tgz = join(ROOT, ".store-edition.tgz");
+  writeFileSync(tgz, bytes);
+  // Artifact is a .tgz whose single top-level dir holds the built site.
+  execFileSync("tar", ["-xzf", tgz, "-C", DIST, "--strip-components=1"], { stdio: "inherit" });
+  rmSync(tgz, { force: true });
+  if (!existsSync(join(DIST, "index.html"))) {
+    console.error("prep-dist: extracted release has no index.html at root — wrong artifact shape?");
+    process.exit(1);
+  }
+
+  // Defense-in-depth: independently scan the extracted bundle for content that variant
+  // must never carry. The main repo runs its OWN allow-list verifier, but the wrapper must
+  // not trust that blindly — a gap there once shipped a live Jupiter swap + wallet-connect +
+  // token-referral into the store build, and only a checksum was verified here.
+  //
+  // ⚠️ THE RULES ARE PER-VARIANT, and getting this wrong breaks a build in either direction.
+  //
+  // The list below started life as "forbidden content, full stop", written when the only
+  // bundled variants were the EDUCATION-ONLY store editions. When the `seeker` variant was
+  // added it was routed through this same code path — correctly, because it wants the pin and
+  // the checksum — but it inherited these patterns too, and **the Seeker edition legitimately
+  // ships every one of the wallet ones.** It is the full product: wallet-connect, signing,
+  // the CLKN mint. Measured against a real `store-edition-seeker-0.1.0.tgz` built from the
+  // main repo, the education list hits 5 times (airdrop-engine.js, cluck-gate.js,
+  // cluck-wallet.js and the app bundle), so `npm run build:seeker` could never have
+  // succeeded — not for a missing tag, but by refusing its own correct artifact. That would
+  // have surfaced the night the release tag was pushed.
+  //
+  // So: education variants keep the original list unchanged. The seeker variant gets its own,
+  // and it is NOT empty — an unguarded variant is how the store gap happened in the first
+  // place. What must never reach a phone is the OPERATOR surface (docs/SEEKER_TOOLS_BUILD.md
+  // §2 "Deliberately NOT in the app"): desk work, payout controls and owner-only screens. A
+  // hit there means the main repo's excludeKeys prune regressed.
+  scanBundle(variant);
 
   console.log(
     `prep-dist: dist/ now holds ${variant === "seeker" ? "Seeker" : "Store"}-edition ${variant} ` +
@@ -218,5 +227,75 @@ if (mode === "store") {
   process.exit(0);
 }
 
-console.error('prep-dist: usage — node scripts/prep-dist.mjs <solana|store>');
+if (mode === "seeker-dev") {
+  // ── A SEEKER APK YOU CAN PUT ON A PHONE TODAY, WITHOUT A PUBLISHED RELEASE. ──
+  //
+  // Why this exists. The `seeker` target consumes a pinned, checksummed release, and publishing
+  // one needs a git tag only the owner can push. That is correct for anything that ships. But it
+  // also meant the mobile-first app had NEVER been installed on a device — the only APKs anyone
+  // could build were the `solana` thin shell over the live website. "We built it" and "someone
+  // can use it" were separated by a tag.
+  //
+  // This mode takes a LOCALLY BUILT bundle instead (main repo:
+  // `node scripts/build-store-edition.mjs seeker` → release/store-edition-seeker-<v>.tgz).
+  //
+  // ⛔ IT CANNOT BE USED TO SHIP. Four independent reasons, not one:
+  //   1. It is a separate MODE. `npm run build:seeker` calls `prep:seeker`, which is mode
+  //      `store`. A release build never reaches this code.
+  //   2. It demands CLKN_SEEKER_DEV=1 explicitly, so it cannot be entered by accident or by a
+  //      stray CLKN_TARGET.
+  //   3. `npm run build:seeker-dev` assembles DEBUG only, under its own applicationId
+  //      (app.clucknorris.seeker.dev). A dev build therefore cannot overwrite, impersonate or be
+  //      uploaded in place of the real app, and both install side by side on the same phone.
+  //   4. It stamps dist/ with DEV_BUILD_DO_NOT_PUBLISH.txt.
+  //
+  // What it does NOT skip is the content scan. A dev build runs the SAME seeker rules as the
+  // release path, through the same function — testing a bundle the real build would have refused
+  // is worse than not testing at all.
+  if (process.env.CLKN_SEEKER_DEV !== "1") {
+    console.error(
+      "\nprep-dist: seeker-dev refused — set CLKN_SEEKER_DEV=1 to mean it.\n" +
+      "This mode bundles an UNPINNED, locally built frontend. It is for putting a debug APK on\n" +
+      "your own device, never for anything that ships. Use `npm run build:seeker` for that.\n"
+    );
+    process.exit(1);
+  }
+  const tgz = process.env.CLKN_SEEKER_DEV_TGZ;
+  if (!tgz || !existsSync(tgz)) {
+    console.error(
+      `\nprep-dist: seeker-dev needs CLKN_SEEKER_DEV_TGZ pointing at a local bundle.\n` +
+      (tgz ? `  no such file: ${tgz}\n` : "  (unset)\n") +
+      `Build one in the MAIN repo:\n  node scripts/build-store-edition.mjs seeker\n` +
+      `then point this at release/store-edition-seeker-<version>.tgz\n`
+    );
+    process.exit(1);
+  }
+
+  resetDist();
+  execFileSync("tar", ["-xzf", tgz, "-C", DIST, "--strip-components=1"], { stdio: "inherit" });
+  if (!existsSync(join(DIST, "index.html"))) {
+    console.error("prep-dist: that tarball has no index.html at root — wrong artifact shape?");
+    process.exit(1);
+  }
+
+  // Same rules as the release path. Not a relaxed copy.
+  scanBundle("seeker");
+
+  writeFileSync(
+    join(DIST, "DEV_BUILD_DO_NOT_PUBLISH.txt"),
+    "This bundle was assembled by `prep-dist.mjs seeker-dev` from an UNPINNED local build.\n" +
+    "It exists so the Seeker app can be installed on a device before a release tag exists.\n" +
+    "It is NOT checksummed against a published release and must never be shipped.\n" +
+    "Ship with: npm run build:seeker (pinned, checksummed, store-edition.lock).\n"
+  );
+
+  console.log(
+    "\nprep-dist: dist/ now holds an UNPINNED dev Seeker bundle.\n" +
+    "  source: " + tgz + "\n" +
+    "  ⚠️ debug only, appId app.clucknorris.seeker.dev — never publish this.\n"
+  );
+  process.exit(0);
+}
+
+console.error('prep-dist: usage — node scripts/prep-dist.mjs <solana|store|seeker-dev>');
 process.exit(1);

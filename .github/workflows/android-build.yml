@@ -104,3 +104,85 @@ jobs:
         if: failure() && steps.assemble.outcome == 'failure'
         working-directory: android
         run: ./gradlew --no-daemon compileDebugKotlin --stacktrace 2>&1 | tail -80 || true
+
+  # ── An installable APK of the ACTUAL mobile-first app, not the thin shell. ──
+  #
+  # The `assemble` job above builds the `solana` target: a Capacitor shell pointed at the live
+  # website. It answers "does the Kotlin compile", and it is the wrong thing to put on a phone if
+  # the question is "does the Seeker app work". The Seeker target needs a pinned, checksummed
+  # release, and that needs a tag only the owner can push — so until now there was no way for
+  # ANYONE to install the mobile-first app. "We built it" and "someone can use it" were separated
+  # by a release tag.
+  #
+  # This job builds the frontend from the main repo's source, runs it through the same seeker
+  # content rules the release path uses, and produces a DEBUG APK under its own applicationId
+  # (app.clucknorris.seeker.dev) so it can sit beside the real app on the same device and can
+  # never be mistaken for it. It is deliberately NOT a release path — see prep-dist.mjs.
+  seeker-dev-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: check out the platform repo (the frontend lives there)
+        uses: actions/checkout@v4
+        with:
+          repository: clucknorrisapp/cluck-norris-school
+          ref: develop
+          path: platform
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: ""
+
+      - name: build the Seeker frontend from source
+        working-directory: platform
+        run: |
+          npm ci
+          node scripts/build-store-edition.mjs seeker
+
+      - name: install wrapper deps
+        run: npm ci
+
+      # The bundle is unpinned by design here, so the mode refuses unless it is asked for
+      # explicitly. It still runs the seeker content scan — a dev build that skipped a check the
+      # release makes would let you test a bundle the real build would have refused.
+      - name: stage the dev bundle
+        env:
+          CLKN_SEEKER_DEV: "1"
+        run: |
+          TGZ=$(ls platform/release/store-edition-seeker-*.tgz | head -1)
+          echo "using $TGZ"
+          CLKN_SEEKER_DEV_TGZ="$PWD/$TGZ" npm run prep:seeker-dev
+
+      - name: capacitor sync
+        env:
+          CLKN_TARGET: seeker
+        run: npx cap sync android
+
+      - name: assemble the dev Seeker APK
+        id: assemble_seeker
+        working-directory: android
+        run: ./gradlew --no-daemon :app:assembleDebug -PclknAppId=app.clucknorris.seeker.dev
+
+      - name: upload the dev Seeker APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: cluck-seeker-dev-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: compile errors, if any
+        if: failure() && steps.assemble_seeker.outcome == 'failure'
+        working-directory: android
+        run: ./gradlew --no-daemon compileDebugKotlin --stacktrace 2>&1 | tail -80 || true

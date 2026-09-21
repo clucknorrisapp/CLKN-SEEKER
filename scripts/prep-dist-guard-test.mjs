@@ -23,7 +23,7 @@
 // prep-dist at a TEMP lock file via CLKN_LOCK_FILE. It never touches store-edition.lock — an
 // earlier manual version of this check did, and only a backup made that recoverable.
 
-import { mkdtempSync, writeFileSync, mkdirSync, rmSync, readFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync, mkdirSync, rmSync, readFileSync, existsSync } from "node:fs";
 import { execFile, execFileSync } from "node:child_process";
 import { promisify } from "node:util";
 import { createHash } from "node:crypto";
@@ -190,6 +190,77 @@ await runCase({
   if (!ok) failures++;
   console.log(`  ${ok ? "✓" : "✗"} seeker: a CHECKSUM MISMATCH is refused before anything is bundled`);
 }
+
+// ── seeker-dev: the unpinned path that exists so the app can reach a phone before a release
+// tag does. Its whole safety argument is that it CANNOT be used to ship, so each leg of that
+// argument is asserted here rather than trusted to the comment that states it.
+async function runDev({ name, env, mutate, expect, wantMarker }) {
+  const dir = baseBundle();
+  if (mutate) mutate(dir);
+  const tgz = pack(dir);
+  rmSync(join(ROOT, "dist"), { recursive: true, force: true });
+
+  let code = 0;
+  try {
+    await execFileAsync(process.execPath, [join(ROOT, "scripts", "prep-dist.mjs"), "seeker-dev"], {
+      cwd: ROOT,
+      env: { ...process.env, CLKN_TARGET: "seeker", CLKN_SEEKER_DEV_TGZ: tgz, ...env },
+      encoding: "utf8",
+    });
+  } catch (e) { code = e.code ?? 1; }
+
+  const want = expect === "pass" ? 0 : 1;
+  let ok = code === want;
+  if (ok && wantMarker !== undefined) {
+    ok = existsSync(join(ROOT, "dist", "DEV_BUILD_DO_NOT_PUBLISH.txt")) === wantMarker;
+  }
+  if (!ok) failures++;
+  console.log(`  ${ok ? "✓" : "✗"} ${name}`);
+  if (!ok) console.log(`      exit ${code}, wanted ${want}${wantMarker !== undefined ? `, marker wanted ${wantMarker}` : ""}`);
+}
+
+await runDev({
+  name: "seeker-dev: REFUSED without CLKN_SEEKER_DEV=1 (cannot be entered by accident)",
+  env: { CLKN_SEEKER_DEV: "" },
+  expect: "fail",
+});
+
+await runDev({
+  name: "seeker-dev: REFUSED when the local bundle does not exist",
+  env: { CLKN_SEEKER_DEV: "1", CLKN_SEEKER_DEV_TGZ: join(work, "nope.tgz") },
+  expect: "fail",
+});
+
+await runDev({
+  name: "seeker-dev: builds a dev bundle and STAMPS it do-not-publish",
+  env: { CLKN_SEEKER_DEV: "1" },
+  expect: "pass",
+  wantMarker: true,
+});
+
+await runDev({
+  name: "seeker-dev: runs the SAME seeker rules — an operator page is refused here too",
+  env: { CLKN_SEEKER_DEV: "1" },
+  mutate: (d) => writeFileSync(join(d, "hub-desk.html"), "<html>desk</html>"),
+  expect: "fail",
+});
+
+// Structural, not behavioural: the release script must never route through the dev mode. If
+// someone ever "simplifies" build:seeker to reuse it, that is the whole guarantee gone, and no
+// runtime test would notice because the dev path succeeds.
+{
+  const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
+  const rel = String(pkg.scripts["build:seeker"] || "");
+  const dev = String(pkg.scripts["build:seeker-dev"] || "");
+  const relClean = rel.includes("prep:seeker") && !rel.includes("seeker-dev") && !rel.includes("assembleDebug");
+  const devDebug = dev.includes("assembleDebug") && !dev.includes("assembleRelease") && dev.includes("app.clucknorris.seeker.dev");
+  if (!relClean) failures++;
+  console.log(`  ${relClean ? "✓" : "✗"} build:seeker is the PINNED release path and never touches seeker-dev`);
+  if (!devDebug) failures++;
+  console.log(`  ${devDebug ? "✓" : "✗"} build:seeker-dev is debug-only, under its own applicationId`);
+}
+
+rmSync(join(ROOT, "dist"), { recursive: true, force: true });
 
 server.close();
 rmSync(work, { recursive: true, force: true });
