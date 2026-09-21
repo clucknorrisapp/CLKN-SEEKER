@@ -63,6 +63,12 @@ jobs:
       - name: install deps
         run: npm ci
 
+      # Cheap, and it guards the one thing that would otherwise fail on release night: the
+      # bundle content rules are per-variant, and the seeker variant legitimately ships the
+      # wallet/signing content the education variants forbid.
+      - name: bundle guard test
+        run: node scripts/prep-dist-guard-test.mjs
+
       # A placeholder dist is all the solana target needs — its capacitor config points at the
       # live site, so the bundle is not what is under test here. The Kotlin is.
       - name: prepare web assets

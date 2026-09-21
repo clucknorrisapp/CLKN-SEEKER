@@ -24,7 +24,11 @@ import { dirname, join } from "node:path";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DIST = join(ROOT, "dist");
-const LOCK = join(ROOT, "store-edition.lock");
+// The pin file. CLKN_LOCK_FILE overrides it for scripts/prep-dist-guard-test.mjs ONLY, so the
+// guard can be exercised against synthetic bundles without a test ever writing the real lock —
+// an earlier manual run of this same check did write it, and only a backup made it recoverable.
+// Nothing in a build path sets this; if it is ever set in CI for a real build, that is a bug.
+const LOCK = process.env.CLKN_LOCK_FILE || join(ROOT, "store-edition.lock");
 
 const mode = process.argv[2];
 const target = process.env.CLKN_TARGET || "solana";
@@ -99,13 +103,30 @@ if (mode === "store") {
     process.exit(1);
   }
 
-  // Defense-in-depth: independently scan the extracted bundle for excluded flows.
-  // The main repo runs its OWN allow-list verifier, but the wrapper must not trust
-  // that blindly — a gap there once shipped a live Jupiter swap + wallet-connect +
-  // token-referral into the store build, and only a checksum was verified here. These
-  // patterns are high-signal: no education-only build should ever contain them, so a
-  // single hit means the pinned release is wrong. Refuse before it reaches an AAB/IPA.
-  const FORBIDDEN = [
+  // Defense-in-depth: independently scan the extracted bundle for content that variant
+  // must never carry. The main repo runs its OWN allow-list verifier, but the wrapper must
+  // not trust that blindly — a gap there once shipped a live Jupiter swap + wallet-connect +
+  // token-referral into the store build, and only a checksum was verified here.
+  //
+  // ⚠️ THE RULES ARE PER-VARIANT, and getting this wrong breaks a build in either direction.
+  //
+  // The list below started life as "forbidden content, full stop", written when the only
+  // bundled variants were the EDUCATION-ONLY store editions. When the `seeker` variant was
+  // added it was routed through this same code path — correctly, because it wants the pin and
+  // the checksum — but it inherited these patterns too, and **the Seeker edition legitimately
+  // ships every one of the wallet ones.** It is the full product: wallet-connect, signing,
+  // the CLKN mint. Measured against a real `store-edition-seeker-0.1.0.tgz` built from the
+  // main repo, the education list hits 5 times (airdrop-engine.js, cluck-gate.js,
+  // cluck-wallet.js and the app bundle), so `npm run build:seeker` could never have
+  // succeeded — not for a missing tag, but by refusing its own correct artifact. That would
+  // have surfaced the night the release tag was pushed.
+  //
+  // So: education variants keep the original list unchanged. The seeker variant gets its own,
+  // and it is NOT empty — an unguarded variant is how the store gap happened in the first
+  // place. What must never reach a phone is the OPERATOR surface (docs/SEEKER_TOOLS_BUILD.md
+  // §2 "Deliberately NOT in the app"): desk work, payout controls and owner-only screens. A
+  // hit there means the main repo's excludeKeys prune regressed.
+  const FORBIDDEN_EDUCATION = [
     ["buy/swap link (jup.ag/swap)", /jup\.ag\/swap/i],
     ["CLKN mint address (token funnel)", /DW6DF2mjtyx67vcNmMhFm9XdxAwREurorghZcS3CBAGS/],
     ["token referral link (bags.fm ?r=)", /bags\.fm[^\s"'<>]*[?&]r=/i],
@@ -113,6 +134,52 @@ if (mode === "store") {
     ["wallet-connect revoke UI (syncRevokeUi)", /syncRevokeUi/i],
     ["wallet-connect button (wallet-btn)", /wallet-btn/i],
   ];
+  // ⚠️ The seeker rules are NOT plain substrings, and that is deliberate. The first version of
+  // this list was — and it failed on its first real bundle, refusing a correct artifact because
+  // the word "jupverify" appears in a COMMENT in the shared cluck-util.js explaining an old XSS
+  // bug. A guard that fires on prose is worse than none: it trains whoever hits it to weaken it.
+  //
+  // What we actually care about is whether an operator SURFACE ships, so that is what is checked:
+  //   (a) a bundled FILE named after one — definitive, no interpretation, and
+  //   (b) a quoted ABSOLUTE PATH to one, i.e. something that could navigate there.
+  // A mention in a comment or a log line satisfies neither.
+  const OPERATOR_SURFACES = [
+    "hub-desk", "hub-pay", "hub-apply", "client-portal", "jupverify",
+    "owners-snapshot", "buyspecial-dashboard", "cuna-payout", "cuna-staking", "lp-rescue",
+  ];
+  const FORBIDDEN_SEEKER = OPERATOR_SURFACES.map((slug) => [
+    `operator surface (${slug}) reachable as a path`,
+    // "/hub-desk , '/hub-desk , `/hub-desk , (/hub-desk  — a real navigation target.
+    new RegExp(`["'\`(]/${slug.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i"),
+  ]);
+  const FORBIDDEN = variant === "seeker" ? FORBIDDEN_SEEKER : FORBIDDEN_EDUCATION;
+
+  // (a) the filename check, which the regex pass cannot express.
+  if (variant === "seeker") {
+    const named = [];
+    const walkNames = (dir) => {
+      for (const name of readdirSync(dir)) {
+        const fp = join(dir, name);
+        if (statSync(fp).isDirectory()) { walkNames(fp); continue; }
+        const lower = name.toLowerCase();
+        for (const slug of OPERATOR_SURFACES) if (lower.includes(slug)) named.push(`${slug} → ${fp.replace(DIST + "/", "dist/")}`);
+      }
+    };
+    walkNames(DIST);
+    if (named.length) {
+      console.error(
+        `\nprep-dist: the pinned seeker bundle SHIPS an operator surface — refusing to build.\n  ` +
+        named.join("\n  ") + `\n\n` +
+        `docs/SEEKER_TOOLS_BUILD.md §2 lists these as deliberately not in the app; several are\n` +
+        `owner-only. Fix the prune in the MAIN repo and republish.\n`
+      );
+      process.exit(1);
+    }
+  }
+  console.log(
+    `prep-dist: scanning with the ${variant === "seeker" ? "SEEKER (operator-surface)" : "EDUCATION-ONLY"} rule set ` +
+    `(${FORBIDDEN.length} patterns).`
+  );
   const TEXT_EXT = new Set([".js", ".mjs", ".cjs", ".html", ".htm", ".css", ".json", ".svg", ".txt", ".map"]);
   const scan = (dir) => {
     for (const name of readdirSync(dir)) {
@@ -124,11 +191,18 @@ if (mode === "store") {
       for (const [label, re] of FORBIDDEN) {
         if (re.test(text)) {
           console.error(
-            `\nprep-dist: FORBIDDEN content in the pinned store bundle — refusing to build.\n` +
+            `\nprep-dist: FORBIDDEN content in the pinned ${variant} bundle — refusing to build.\n` +
             `  ${label}\n  found in ${p.replace(DIST + "/", "dist/")}\n\n` +
-            `This release still contains an EXCLUDED flow (buy/swap, wallet-connect, on-chain\n` +
-            `signing, or a token referral). It must be stripped in the MAIN repo and republished\n` +
-            `as a new store-edition release; do NOT ship this bundle. See play-store/STORE-EDITION-MANIFEST.md.\n`
+            (variant === "seeker"
+              ? `This release carries an OPERATOR surface. Those are desk work on a large screen and\n` +
+                `several are owner-only; docs/SEEKER_TOOLS_BUILD.md §2 lists them as deliberately not in\n` +
+                `the app. A hit here means the MAIN repo's excludeKeys prune regressed — fix it there and\n` +
+                `republish; do NOT ship this bundle.\n\n` +
+                `⚠️ If the label above names wallet-connect, signing or the CLKN mint, the rule set is\n` +
+                `wrong, not the bundle. The Seeker edition is the full product and ships all three.\n`
+              : `This release still contains an EXCLUDED flow (buy/swap, wallet-connect, on-chain\n` +
+                `signing, or a token referral). It must be stripped in the MAIN repo and republished\n` +
+                `as a new store-edition release; do NOT ship this bundle. See play-store/STORE-EDITION-MANIFEST.md.\n`)
           );
           process.exit(1);
         }
@@ -137,7 +211,10 @@ if (mode === "store") {
   };
   scan(DIST);
 
-  console.log(`prep-dist: dist/ now holds Store-edition ${variant} v${pin.version} (sha256 + content scan verified).`);
+  console.log(
+    `prep-dist: dist/ now holds ${variant === "seeker" ? "Seeker" : "Store"}-edition ${variant} ` +
+    `v${pin.version} (sha256 + content scan verified).`
+  );
   process.exit(0);
 }
 
