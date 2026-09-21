@@ -2,7 +2,7 @@
 
 buildscript {
 
-    // CluckMWA (android/app/src/main/java/app/clucknorris/school/mwa/CluckMWAPlugin.kt) is the
+    // CluckMWA (android/app/src/wallet/java/app/clucknorris/school/mwa/CluckMWAPlugin.kt) is the
     // one Kotlin file in an otherwise all-Java app — the official Solana Mobile client library
     // (com.solanamobile:mobile-wallet-adapter-clientlib-ktx) is Kotlin-first (suspend functions),
     // so the plugin is written in Kotlin against it rather than fighting Java interop with

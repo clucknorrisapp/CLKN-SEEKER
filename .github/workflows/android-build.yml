@@ -8,8 +8,8 @@
 # ⚠️ This job deliberately builds the SOLANA target, not the seeker one. The seeker target
 # refuses to build without a pinned, checksummed release (a tag only the owner can push) and
 # that refusal is correct — faking a pin to make CI green would be the exact false success this
-# project keeps paying for. But the plugin lives in android/app/src/main, so ANY assemble
-# compiles it. This answers the compile question today without weakening the pin.
+# project keeps paying for. But the plugin lives in android/app/src/wallet, on the source path of
+# every target except the education one (-PclknWallet=false), so this default assemble compiles it. This answers the compile question today without weakening the pin.
 #
 # What a green run here does and does not mean:
 #   ✅ the Kotlin compiles, the clientlib resolves, the plugin registers, an APK is produced
@@ -182,6 +182,16 @@ jobs:
         working-directory: android
         run: ./gradlew --no-daemon :app:assembleDebug -PclknAppId=app.clucknorris.seeker.dev
 
+      # Positive control for the play-dev job's "no wallet layer" probe: the same strings MUST be
+      # present here, or that probe proves nothing. (Default clknWallet — the wallet source set.)
+      - name: the Seeker APK HAS the wallet layer
+        run: |
+          set -e
+          APK=$(ls android/app/build/outputs/apk/debug/*.apk | head -1)
+          unzip -p "$APK" 'classes*.dex' | strings | grep -q 'CluckMWAPlugin' && echo "✓ CluckMWAPlugin present"
+          unzip -p "$APK" 'classes*.dex' | strings | grep -q 'MobileWalletAdapter' && echo "✓ MobileWalletAdapter present"
+          unzip -p "$APK" AndroidManifest.xml | strings -e l | grep -q 'solana-wallet' && echo "✓ solana-wallet query present"
+
       - name: upload the dev Seeker APK
         uses: actions/upload-artifact@v4
         with:
@@ -252,7 +262,25 @@ jobs:
       - name: assemble the dev Play-edition APK
         id: assemble_play
         working-directory: android
-        run: ./gradlew --no-daemon :app:assembleDebug -PclknAppId=app.clucknorris.edu.dev
+        run: ./gradlew --no-daemon :app:assembleDebug -PclknAppId=app.clucknorris.edu.dev -PclknWallet=false
+
+      # The education edition promises "no wallet" on its store legal pages. `-PclknWallet=false`
+      # is supposed to leave the Mobile Wallet Adapter bridge, its client library and the merged
+      # "solana-wallet" <queries> entry out of the binary — this reads the APK to prove it did,
+      # because the first Play-dev APK (2026-09-21) carried all three while every source-level
+      # check said "no wallet". The seeker-dev job runs the same probe as a positive control.
+      - name: the Play-edition APK has no wallet layer
+        run: |
+          set -e
+          APK=$(ls android/app/build/outputs/apk/debug/*.apk | head -1)
+          echo "probing $APK"
+          fail=0
+          if unzip -p "$APK" 'classes*.dex' | strings | grep -q 'MobileWalletAdapter'; then echo "✗ MobileWalletAdapter classes are in the dex"; fail=1; else echo "✓ no MobileWalletAdapter class"; fi
+          if unzip -p "$APK" 'classes*.dex' | strings | grep -q 'CluckMWAPlugin'; then echo "✗ CluckMWAPlugin is in the dex"; fail=1; else echo "✓ no CluckMWAPlugin class"; fi
+          if unzip -p "$APK" AndroidManifest.xml | strings -e l | grep -q 'solana-wallet'; then echo "✗ manifest queries the solana-wallet scheme"; fail=1; else echo "✓ manifest has no solana-wallet query"; fi
+          if ! unzip -p "$APK" AndroidManifest.xml | strings -e l | grep -q 'app.clucknorris.edu.dev'; then echo "✗ manifest is not the edu.dev app id"; fail=1; else echo "✓ app id app.clucknorris.edu.dev"; fi
+          if ! unzip -l "$APK" | grep -q 'assets/public/DEV_BUILD_DO_NOT_PUBLISH.txt'; then echo "✗ dev stamp missing"; fail=1; else echo "✓ stamped do-not-publish"; fi
+          exit $fail
 
       - name: upload the dev Play-edition APK
         uses: actions/upload-artifact@v4

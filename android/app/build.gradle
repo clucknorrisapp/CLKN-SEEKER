@@ -1,6 +1,7 @@
 apply plugin: 'com.android.application'
-// Needed for CluckMWA (app/src/main/java/.../mwa/CluckMWAPlugin.kt) — see android/build.gradle
-// for why this is Kotlin. The rest of the app stays Java; nothing else here is affected.
+// Needed for CluckMWA (app/src/wallet/java/.../mwa/CluckMWAPlugin.kt) — see android/build.gradle
+// for why this is Kotlin. The rest of the app stays Java; nothing else here is affected. The
+// education targets have no Kotlin source on their path, so the plugin compiles nothing there.
 apply plugin: 'kotlin-android'
 
 // ── Multi-target app id + signing ──────────────────────────────────────────
@@ -14,6 +15,22 @@ apply plugin: 'kotlin-android'
 // Every keystore*.properties file is gitignored and must never be committed.
 def clknAppId = project.hasProperty('clknAppId') ? project.clknAppId : 'app.clucknorris.school'
 def clknKeystoreName = project.hasProperty('clknKeystore') ? project.clknKeystore : 'keystore.properties'
+
+// ── Wallet layer: in or OUT of the binary ──────────────────────────────────
+// The Google Play / iOS edition is education-only (its legal pages promise "no wallet"), and the
+// v1.0.0 Play release predates the Mobile Wallet Adapter bridge. Since the bridge landed, a plain
+// `assemble` compiled and REGISTERED it for every target — the 2026-09-21 Play-dev APK carried
+// the whole MWA client library plus its merged `<queries>` entry for the "solana-wallet" scheme,
+// in an app whose web bundle can never call it. Inert is not absent: a store reviewer sees the
+// library and the intent query, not our intent. So the wallet layer is a Gradle property:
+//   -PclknWallet=false  → the education MainActivity (src/education/java, registers nothing),
+//                         no MWA / coroutines dependency, no Kotlin source on the path
+//   default (unset)     → the wallet MainActivity + CluckMWAPlugin (src/wallet/java) and the
+//                         library, exactly as before — Solana and Seeker targets are unchanged
+// `npm run build:play` / `build:play-dev` pass it; scripts/prep-dist-guard-test.mjs pins that and
+// the CI play-dev job asserts the produced APK has no MobileWalletAdapter class and no
+// "solana-wallet" query. Never pass it on the Solana or Seeker targets.
+def clknWallet = !(project.hasProperty('clknWallet') && project.clknWallet.toString() == 'false')
 
 def keystorePropertiesFile = rootProject.file(clknKeystoreName)
 def keystoreProperties = new Properties()
@@ -62,6 +79,16 @@ android {
     kotlinOptions {
         jvmTarget = "21"
     }
+
+    // One MainActivity per wallet mode — see the `clknWallet` note at the top. src/main/java holds
+    // no activity of its own on purpose: whichever directory is added here supplies it, so a
+    // wallet-less build cannot even reference the plugin class (the Kotlin Android plugin picks
+    // Kotlin sources up from `java.srcDirs` too, so the .kt file rides along only on the wallet side).
+    sourceSets {
+        main {
+            java.srcDirs += [clknWallet ? 'src/wallet/java' : 'src/education/java']
+        }
+    }
 }
 
 repositories {
@@ -77,7 +104,8 @@ dependencies {
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation project(':capacitor-android')
 
-    // CluckMWA — the native Mobile Wallet Adapter bridge (app/src/main/java/.../mwa/CluckMWAPlugin.kt).
+    // CluckMWA — the native Mobile Wallet Adapter bridge (app/src/wallet/java/.../mwa/CluckMWAPlugin.kt).
+    // WALLET TARGETS ONLY (see `clknWallet` at the top) — the education build must not resolve it.
     // 2.1.1 is the newest STABLE (non-beta) release whose own compileSdk/targetSdk (36) matches this
     // app's compileSdk (android/variables.gradle) exactly — the next release, 2.2.0, requires
     // compileSdk 37 and would force an unrelated SDK/AGP bump this change doesn't need. Verified by
@@ -99,7 +127,7 @@ dependencies {
     //     best redundant and at worst a merge conflict. Verify what actually merged in
     //     app/build/intermediates/merged_manifests/release/AndroidManifest.xml after a real build
     //     (unverified from this container — no Android SDK to run one).
-    implementation "com.solanamobile:mobile-wallet-adapter-clientlib-ktx:2.1.1"
+    if (clknWallet) implementation "com.solanamobile:mobile-wallet-adapter-clientlib-ktx:2.1.1"
 
     // kotlinx-coroutines-android provides the Main dispatcher (Dispatchers.Main) via Android's
     // ServiceLoader hook; clientlib-ktx uses coroutines-core internally but does not declare
@@ -107,7 +135,7 @@ dependencies {
     // needed by the library's own IO-bound calls), so the app needs it explicitly for the plugin's
     // own CoroutineScope(Dispatchers.Main). Version matches the same v2.1.1 lockfile referenced
     // above (kotlinxCoroutines = "1.11.0").
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0"
+    if (clknWallet) implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0"
 
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"

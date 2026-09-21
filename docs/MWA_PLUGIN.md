@@ -179,7 +179,13 @@ under Android 11+ package-visibility rules) arrive from the dependency. **Do not
 redundant at best. This is asserted from reading the library's own manifest source, not verified
 by an actual build (see "What is unverified" below for exactly how to check it for real).
 
-### New file: `android/app/src/main/java/app/clucknorris/school/mwa/CluckMWAPlugin.kt`
+### New file: `android/app/src/wallet/java/app/clucknorris/school/mwa/CluckMWAPlugin.kt`
+
+(Moved from `src/main/java` on 2026-09-21: the wallet layer is a Gradle property now — `src/wallet/java`
+holds this plugin and the MainActivity that registers it, `src/education/java` holds a MainActivity
+that registers nothing, and `-PclknWallet=false` (the Play/iOS scripts) picks the latter and drops the
+library dependency, so the education APK has no wallet code in it. See `clknWallet` in
+`android/app/build.gradle`.)
 
 The plugin itself. One `MobileWalletAdapter` + one `ActivityResultSender` per Activity instance.
 Key design points (all explained in inline comments at the relevant spot in the file):

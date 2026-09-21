@@ -8,7 +8,9 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        // CluckMWA lives inside this app's own source (app/src/main/java/.../mwa/), not as a
+        // This is the WALLET MainActivity (Solana + Seeker targets); the education targets compile
+        // src/education/java's instead and never see this class — see build.gradle `clknWallet`.
+        // CluckMWA lives inside this app's own source (app/src/wallet/java/.../mwa/), not as a
         // separate installed Capacitor plugin package under node_modules — so it is never listed
         // in the generated capacitor.plugins.json / capacitor.settings.gradle and Capacitor's
         // plugin auto-discovery never sees it. This is Capacitor's own documented pattern for a

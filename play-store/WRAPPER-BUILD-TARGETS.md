@@ -94,7 +94,7 @@ android {
 }
 ```
 - `solana` build passes nothing → id `app.clucknorris.school`, existing keystore. **Live app preserved.**
-- `googlePlay` build passes `-PclknAppId=app.clucknorris.edu -PclknKeystore=keystore.play.properties` (the new `clkn-edu` upload key).
+- `googlePlay` build passes `-PclknAppId=app.clucknorris.edu -PclknKeystore=keystore.play.properties` (the new `clkn-edu` upload key) **and `-PclknWallet=false`** (since 2026-09-21: compiles the education `MainActivity` from `src/education/java`, leaves the Mobile Wallet Adapter plugin, its library and the `solana-wallet` query out of the binary — the store legal pages promise no wallet, and a reviewer sees the library, not our intent).
 
 ## Step 4 — Build scripts (`package.json`)
 ```jsonc
@@ -102,7 +102,7 @@ android {
   "prep:solana": "node scripts/prep-dist.mjs solana",     // writes placeholder dist/
   "prep:store":  "node scripts/prep-dist.mjs store",       // pulls Store-edition release into dist/ (variant by CLKN_TARGET)
   "build:solana": "CLKN_TARGET=solana npm run prep:solana && npx cap sync android && (cd android && ./gradlew :app:assembleRelease)",
-  "build:play":   "CLKN_TARGET=googlePlay npm run prep:store && npx cap sync android && (cd android && ./gradlew :app:bundleRelease -PclknAppId=app.clucknorris.edu -PclknKeystore=keystore.play.properties)",
+  "build:play":   "CLKN_TARGET=googlePlay npm run prep:store && npx cap sync android && (cd android && ./gradlew :app:bundleRelease -PclknAppId=app.clucknorris.edu -PclknKeystore=keystore.play.properties -PclknWallet=false)",
   "build:ios":    "CLKN_TARGET=ios npm run prep:store && npx cap sync ios"   // then archive in Xcode
 }
 ```

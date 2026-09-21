@@ -279,10 +279,19 @@ await runDev({ ...PLAY,
   const dev = String(pkg.scripts["build:play-dev"] || "");
   const relClean = rel.includes("prep:store") && !rel.includes("play-dev") && !rel.includes("assembleDebug");
   const devDebug = dev.includes("assembleDebug") && !dev.includes("assembleRelease") && !dev.includes("bundleRelease") && dev.includes("app.clucknorris.edu.dev") && dev.includes("CLKN_TARGET=googlePlay");
+  // The wallet layer is a Gradle property (android/app/build.gradle `clknWallet`): both Play
+  // scripts must build WITHOUT it, and the Solana/Seeker scripts must never pass it. Found the
+  // hard way on 2026-09-21 — the first Play-dev APK carried the whole MWA client library.
+  const noWallet = rel.includes("-PclknWallet=false") && dev.includes("-PclknWallet=false");
+  const walletKept = ["build:solana", "build:seeker", "build:seeker-dev"].every((k) => !String(pkg.scripts[k] || "").includes("clknWallet"));
   if (!relClean) failures++;
   console.log(`  ${relClean ? "✓" : "✗"} build:play is the PINNED release path and never touches play-dev`);
   if (!devDebug) failures++;
-  console.log(`  ${devDebug ? "✓" : "✗"} build:play-dev is debug-only, under its own applicationId, as the googlePlay target (no MWA plugin, store UA marker)`);
+  console.log(`  ${devDebug ? "✓" : "✗"} build:play-dev is debug-only, under its own applicationId, as the googlePlay target (store UA marker)`);
+  if (!noWallet) failures++;
+  console.log(`  ${noWallet ? "✓" : "✗"} build:play and build:play-dev pass -PclknWallet=false (no MWA plugin, library or solana-wallet query in the binary)`);
+  if (!walletKept) failures++;
+  console.log(`  ${walletKept ? "✓" : "✗"} build:solana / build:seeker / build:seeker-dev never pass clknWallet (wallet layer stays in)`);
 }
 
 // Structural, not behavioural: the release script must never route through the dev mode. If
