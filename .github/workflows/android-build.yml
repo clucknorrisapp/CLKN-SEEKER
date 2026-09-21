@@ -37,9 +37,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # 22, not 20: the Capacitor 8 CLI hard-refuses anything below 22 ("The Capacitor CLI
+      # requires NodeJS >=22.0.0") and exits 1 at `cap sync`.
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
 
       - uses: actions/setup-java@v4
