@@ -29,6 +29,11 @@ on:
       - ".github/workflows/android-build.yml"
   pull_request:
   workflow_dispatch:
+    inputs:
+      platform_ref:
+        description: "Branch/tag of clucknorrisapp/cluck-norris-school to build the Seeker frontend from (default: develop)"
+        required: false
+        default: develop
 
 jobs:
   assemble:
@@ -124,11 +129,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The ref is an input so a Seeker APK can be built from a PR BRANCH without merging it
+      # first. That matters: review and device-testing want the same build, and pushing to
+      # develop just to get an installable is exactly the pressure that skips review.
       - name: check out the platform repo (the frontend lives there)
         uses: actions/checkout@v4
         with:
           repository: clucknorrisapp/cluck-norris-school
-          ref: develop
+          ref: ${{ inputs.platform_ref || 'develop' }}
           path: platform
 
       - uses: actions/setup-node@v4
