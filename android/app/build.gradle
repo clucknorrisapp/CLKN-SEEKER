@@ -1,4 +1,7 @@
 apply plugin: 'com.android.application'
+// Needed for CluckMWA (app/src/main/java/.../mwa/CluckMWAPlugin.kt) — see android/build.gradle
+// for why this is Kotlin. The rest of the app stays Java; nothing else here is affected.
+apply plugin: 'kotlin-android'
 
 // ── Multi-target app id + signing ──────────────────────────────────────────
 // The Solana / FULL edition is the DEFAULT and is intentionally unchanged: with
@@ -51,6 +54,14 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
+    // Kotlin must target the same bytecode level as the Java sources it's mixed with, or Gradle
+    // fails the build with "Inconsistent JVM-target compatibility". capacitor.build.gradle (which
+    // this file applies below, and which `cap sync` regenerates — do not edit it directly) pins
+    // Java sourceCompatibility/targetCompatibility to VERSION_21, so Kotlin is pinned to match.
+    kotlinOptions {
+        jvmTarget = "21"
+    }
 }
 
 repositories {
@@ -65,6 +76,39 @@ dependencies {
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation project(':capacitor-android')
+
+    // CluckMWA — the native Mobile Wallet Adapter bridge (app/src/main/java/.../mwa/CluckMWAPlugin.kt).
+    // 2.1.1 is the newest STABLE (non-beta) release whose own compileSdk/targetSdk (36) matches this
+    // app's compileSdk (android/variables.gradle) exactly — the next release, 2.2.0, requires
+    // compileSdk 37 and would force an unrelated SDK/AGP bump this change doesn't need. Verified by
+    // diffing solana-mobile/mobile-wallet-adapter's clientlib-ktx source between tags v2.1.1 and the
+    // current main branch: identical for every API surface this plugin uses (MobileWalletAdapter,
+    // AdapterOperations, ConnectionIdentity, TransactionResult, TransactionParams,
+    // ActivityResultSender) — so pinning to 2.1.1 costs nothing in capability.
+    // Pulls in, transitively (all `api` deps of the library, not guesses):
+    //   - com.solanamobile:mobile-wallet-adapter-clientlib (the JSON-RPC/session client)
+    //   - com.solanamobile:mobile-wallet-adapter-common (protocol constants AND
+    //     com.solana.mobilewalletadapter.common.util.Base58 — used to encode signatures; do not
+    //     add a second Base58 dependency or hand-roll one)
+    //   - com.solanamobile:web3-solana (only its transitive presence matters here; this plugin
+    //     talks in raw ByteArrays, not that library's Transaction type)
+    //   - the clientlib module's own AndroidManifest.xml, which already declares INTERNET,
+    //     ACCESS_NETWORK_STATE, and a <queries> entry for the "solana-wallet" scheme — Android's
+    //     manifest merger adds these to this app automatically. Do NOT add a second <queries>
+    //     block for "solana-wallet" in app/src/main/AndroidManifest.xml; a duplicate entry is at
+    //     best redundant and at worst a merge conflict. Verify what actually merged in
+    //     app/build/intermediates/merged_manifests/release/AndroidManifest.xml after a real build
+    //     (unverified from this container — no Android SDK to run one).
+    implementation "com.solanamobile:mobile-wallet-adapter-clientlib-ktx:2.1.1"
+
+    // kotlinx-coroutines-android provides the Main dispatcher (Dispatchers.Main) via Android's
+    // ServiceLoader hook; clientlib-ktx uses coroutines-core internally but does not declare
+    // coroutines-android itself (it's implementation-scoped in its own build, and Main isn't
+    // needed by the library's own IO-bound calls), so the app needs it explicitly for the plugin's
+    // own CoroutineScope(Dispatchers.Main). Version matches the same v2.1.1 lockfile referenced
+    // above (kotlinxCoroutines = "1.11.0").
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0"
+
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
