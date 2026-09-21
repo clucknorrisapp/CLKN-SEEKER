@@ -297,5 +297,72 @@ if (mode === "seeker-dev") {
   process.exit(0);
 }
 
-console.error('prep-dist: usage — node scripts/prep-dist.mjs <solana|store|seeker-dev>');
+if (mode === "play-dev") {
+  // ── THE PLAY/iOS EDITION ON A PHONE TODAY, WITHOUT A PUBLISHED RELEASE. ──
+  //
+  // The twin of `seeker-dev`, for the EDUCATION edition (main repo store-edition v1.1.0: the
+  // Seeker shell built with no wallet — docs/STORE_EDITION.md there). `npm run build:play`
+  // consumes a pinned, checksummed release and that needs a tag only the owner pushes; this mode
+  // takes a LOCALLY BUILT bundle (`node scripts/build-store-edition.mjs google` in the main repo
+  // → release/store-edition-google-<v>.tgz) so the store shell can be looked at on a device
+  // before the tag exists.
+  //
+  // ⛔ IT CANNOT BE USED TO SHIP, for the same four independent reasons as seeker-dev:
+  //   1. a separate MODE — `build:play` calls `prep:store` and never reaches this code;
+  //   2. it demands CLKN_PLAY_DEV=1 explicitly;
+  //   3. `build:play-dev` assembles DEBUG only, under its own applicationId
+  //      (app.clucknorris.edu.dev) — it cannot overwrite or impersonate the store app, and the
+  //      two install side by side;
+  //   4. it stamps dist/ with DEV_BUILD_DO_NOT_PUBLISH.txt.
+  //
+  // And it runs the SAME education-only scan the release path runs (scanBundle("google")): a
+  // wallet script, a swap link, the mint, a referral, signing code — refused here exactly as
+  // there. A dev build that skipped a check the store build makes would let you test something
+  // the store build would have refused.
+  if (process.env.CLKN_PLAY_DEV !== "1") {
+    console.error(
+      "\nprep-dist: play-dev refused — set CLKN_PLAY_DEV=1 to mean it.\n" +
+      "This mode bundles an UNPINNED, locally built education-edition frontend. It is for putting\n" +
+      "a debug APK on your own device, never for anything that ships. Use `npm run build:play` for that.\n"
+    );
+    process.exit(1);
+  }
+  const tgz = process.env.CLKN_PLAY_DEV_TGZ;
+  if (!tgz || !existsSync(tgz)) {
+    console.error(
+      `\nprep-dist: play-dev needs CLKN_PLAY_DEV_TGZ pointing at a local bundle.\n` +
+      (tgz ? `  no such file: ${tgz}\n` : "  (unset)\n") +
+      `Build one in the MAIN repo:\n  node scripts/build-store-edition.mjs google\n` +
+      `then point this at release/store-edition-google-<version>.tgz\n`
+    );
+    process.exit(1);
+  }
+
+  resetDist();
+  execFileSync("tar", ["-xzf", tgz, "-C", DIST, "--strip-components=1"], { stdio: "inherit" });
+  if (!existsSync(join(DIST, "index.html"))) {
+    console.error("prep-dist: that tarball has no index.html at root — wrong artifact shape?");
+    process.exit(1);
+  }
+
+  // The EDUCATION rules — the same ones `build:play` enforces. Not a relaxed copy.
+  scanBundle("google");
+
+  writeFileSync(
+    join(DIST, "DEV_BUILD_DO_NOT_PUBLISH.txt"),
+    "This bundle was assembled by `prep-dist.mjs play-dev` from an UNPINNED local build.\n" +
+    "It exists so the Google Play / iOS edition can be installed on a device before a release tag exists.\n" +
+    "It is NOT checksummed against a published release and must never be shipped.\n" +
+    "Ship with: npm run build:play (pinned, checksummed, store-edition.lock).\n"
+  );
+
+  console.log(
+    "\nprep-dist: dist/ now holds an UNPINNED dev Play/iOS-edition bundle.\n" +
+    "  source: " + tgz + "\n" +
+    "  ⚠️ debug only, appId app.clucknorris.edu.dev — never publish this.\n"
+  );
+  process.exit(0);
+}
+
+console.error('prep-dist: usage — node scripts/prep-dist.mjs <solana|store|seeker-dev|play-dev>');
 process.exit(1);

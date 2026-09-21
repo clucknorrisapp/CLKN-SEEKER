@@ -194,7 +194,7 @@ await runCase({
 // ── seeker-dev: the unpinned path that exists so the app can reach a phone before a release
 // tag does. Its whole safety argument is that it CANNOT be used to ship, so each leg of that
 // argument is asserted here rather than trusted to the comment that states it.
-async function runDev({ name, env, mutate, expect, wantMarker }) {
+async function runDev({ name, env, mutate, expect, wantMarker, mode = "seeker-dev", target = "seeker", tgzEnv = "CLKN_SEEKER_DEV_TGZ" }) {
   const dir = baseBundle();
   if (mutate) mutate(dir);
   const tgz = pack(dir);
@@ -202,9 +202,9 @@ async function runDev({ name, env, mutate, expect, wantMarker }) {
 
   let code = 0;
   try {
-    await execFileAsync(process.execPath, [join(ROOT, "scripts", "prep-dist.mjs"), "seeker-dev"], {
+    await execFileAsync(process.execPath, [join(ROOT, "scripts", "prep-dist.mjs"), mode], {
       cwd: ROOT,
-      env: { ...process.env, CLKN_TARGET: "seeker", CLKN_SEEKER_DEV_TGZ: tgz, ...env },
+      env: { ...process.env, CLKN_TARGET: target, [tgzEnv]: tgz, ...env },
       encoding: "utf8",
     });
   } catch (e) { code = e.code ?? 1; }
@@ -244,6 +244,46 @@ await runDev({
   mutate: (d) => writeFileSync(join(d, "hub-desk.html"), "<html>desk</html>"),
   expect: "fail",
 });
+
+// ── play-dev: the same unpinned path for the EDUCATION edition (main repo store-edition v1.1.0,
+// the Seeker shell with no wallet). Same four-leg safety argument, asserted the same way — plus
+// the one that matters most for THIS edition: the education rules run. The base fixture is the
+// Seeker edition (every education-forbidden marker in cluck-wallet.js), so play-dev must REFUSE
+// it as-is and accept it only once the wallet file is gone.
+const PLAY = { mode: "play-dev", target: "googlePlay", tgzEnv: "CLKN_PLAY_DEV_TGZ" };
+const dropWallet = (d) => rmSync(join(d, "cluck-wallet.js"), { force: true });
+
+await runDev({ ...PLAY,
+  name: "play-dev: REFUSED without CLKN_PLAY_DEV=1 (cannot be entered by accident)",
+  env: { CLKN_PLAY_DEV: "" }, mutate: dropWallet,
+  expect: "fail",
+});
+await runDev({ ...PLAY,
+  name: "play-dev: REFUSED when the local bundle does not exist",
+  env: { CLKN_PLAY_DEV: "1", CLKN_PLAY_DEV_TGZ: join(work, "nope.tgz") }, mutate: dropWallet,
+  expect: "fail",
+});
+await runDev({ ...PLAY,
+  name: "play-dev: ⚠️ runs the EDUCATION rules — a bundle carrying the wallet file (mint, signing, swap link) is refused",
+  env: { CLKN_PLAY_DEV: "1" },
+  expect: "fail",
+});
+await runDev({ ...PLAY,
+  name: "play-dev: an education-clean bundle builds and is STAMPED do-not-publish",
+  env: { CLKN_PLAY_DEV: "1" }, mutate: dropWallet,
+  expect: "pass", wantMarker: true,
+});
+{
+  const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
+  const rel = String(pkg.scripts["build:play"] || "");
+  const dev = String(pkg.scripts["build:play-dev"] || "");
+  const relClean = rel.includes("prep:store") && !rel.includes("play-dev") && !rel.includes("assembleDebug");
+  const devDebug = dev.includes("assembleDebug") && !dev.includes("assembleRelease") && !dev.includes("bundleRelease") && dev.includes("app.clucknorris.edu.dev") && dev.includes("CLKN_TARGET=googlePlay");
+  if (!relClean) failures++;
+  console.log(`  ${relClean ? "✓" : "✗"} build:play is the PINNED release path and never touches play-dev`);
+  if (!devDebug) failures++;
+  console.log(`  ${devDebug ? "✓" : "✗"} build:play-dev is debug-only, under its own applicationId, as the googlePlay target (no MWA plugin, store UA marker)`);
+}
 
 // Structural, not behavioural: the release script must never route through the dev mode. If
 // someone ever "simplifies" build:seeker to reuse it, that is the whole guarantee gone, and no

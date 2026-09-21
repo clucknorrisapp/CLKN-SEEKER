@@ -194,3 +194,75 @@ jobs:
         if: failure() && steps.assemble_seeker.outcome == 'failure'
         working-directory: android
         run: ./gradlew --no-daemon compileDebugKotlin --stacktrace 2>&1 | tail -80 || true
+
+  # The Google Play / iOS EDITION of the same shell (main repo store-edition v1.1.0), as an
+  # installable debug APK — the twin of seeker-dev-apk. Built from the platform ref with the
+  # EDUCATION rules (no wallet, no payments, no address; the main repo's own verifier and this
+  # repo's prep-dist scan both run), under its own applicationId (app.clucknorris.edu.dev) so it
+  # sits beside the real store app and the Seeker dev app on one phone and can never be mistaken
+  # for either. Not a release path — see prep-dist.mjs `play-dev`.
+  play-dev-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: check out the platform repo (the frontend lives there)
+        uses: actions/checkout@v4
+        with:
+          repository: clucknorrisapp/cluck-norris-school
+          ref: ${{ inputs.platform_ref || 'develop' }}
+          path: platform
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: ""
+
+      - name: build the education-edition frontend from source
+        working-directory: platform
+        run: |
+          npm ci
+          node scripts/build-store-edition.mjs google
+
+      - name: install wrapper deps
+        run: npm ci
+
+      - name: stage the dev bundle (education rules enforced)
+        env:
+          CLKN_PLAY_DEV: "1"
+        run: |
+          TGZ=$(ls platform/release/store-edition-google-*.tgz | head -1)
+          echo "using $TGZ"
+          CLKN_PLAY_DEV_TGZ="$PWD/$TGZ" npm run prep:play-dev
+
+      - name: capacitor sync
+        env:
+          CLKN_TARGET: googlePlay
+        run: npx cap sync android
+
+      - name: assemble the dev Play-edition APK
+        id: assemble_play
+        working-directory: android
+        run: ./gradlew --no-daemon :app:assembleDebug -PclknAppId=app.clucknorris.edu.dev
+
+      - name: upload the dev Play-edition APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: cluck-play-dev-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: compile errors, if any
+        if: failure() && steps.assemble_play.outcome == 'failure'
+        working-directory: android
+        run: ./gradlew --no-daemon compileDebugKotlin --stacktrace 2>&1 | tail -80 || true

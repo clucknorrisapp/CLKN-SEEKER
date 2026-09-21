@@ -15,7 +15,9 @@
     "prep:seeker": "CLKN_TARGET=seeker node scripts/prep-dist.mjs store",
     "build:seeker": "export CLKN_TARGET=seeker && npm run prep:seeker && npx cap sync android && cd android && ./gradlew :app:assembleRelease -PclknAppId=app.clucknorris.seeker",
     "prep:seeker-dev": "CLKN_TARGET=seeker node scripts/prep-dist.mjs seeker-dev",
-    "build:seeker-dev": "export CLKN_TARGET=seeker && npm run prep:seeker-dev && npx cap sync android && cd android && ./gradlew :app:assembleDebug -PclknAppId=app.clucknorris.seeker.dev"
+    "build:seeker-dev": "export CLKN_TARGET=seeker && npm run prep:seeker-dev && npx cap sync android && cd android && ./gradlew :app:assembleDebug -PclknAppId=app.clucknorris.seeker.dev",
+    "prep:play-dev": "CLKN_TARGET=googlePlay node scripts/prep-dist.mjs play-dev",
+    "build:play-dev": "export CLKN_TARGET=googlePlay && npm run prep:play-dev && npx cap sync android && cd android && ./gradlew :app:assembleDebug -PclknAppId=app.clucknorris.edu.dev"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.4",
