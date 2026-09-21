@@ -49,7 +49,14 @@ jobs:
 
       # ubuntu-latest ships the Android SDK; this just puts the tooling on PATH and
       # accepts licences so Gradle does not stop to ask.
+      #
+      # `packages: ''` is load-bearing. The action's default is `tools platform-tools`, and
+      # `tools` is an OBSOLETE SDK package that sdkmanager no longer serves — it answers
+      # "Warning: Failed to find package 'tools'" and exits 1, which fails this step before a
+      # single line of our own code runs. The runner image already has platform-tools.
       - uses: android-actions/setup-android@v3
+        with:
+          packages: ""
 
       - name: install deps
         run: npm ci
@@ -63,6 +70,7 @@ jobs:
         run: npx cap sync android
 
       - name: assemble debug APK
+        id: assemble
         working-directory: android
         run: ./gradlew --no-daemon assembleDebug
 
@@ -75,9 +83,16 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      # Runs even when assemble fails: a Kotlin error is the single most useful thing this
-      # workflow can report, and it should not be buried in a collapsed log group.
+      # Runs when ASSEMBLE fails: a Kotlin error is the single most useful thing this workflow
+      # can report, and it should not be buried in a collapsed log group.
+      #
+      # ⚠️ Gated on the assemble step specifically, not on a bare `if: failure()`. A bare one
+      # re-ran Gradle after an EARLIER step died, in a tree with no node_modules and no
+      # `cap sync`, and produced a confident, completely unrelated error about a missing
+      # cordova.variables.gradle. A whole diagnosis was spent on that phantom. A fallback that
+      # can run in a state its command does not support does not report failures — it invents
+      # them.
       - name: compile errors, if any
-        if: failure()
+        if: failure() && steps.assemble.outcome == 'failure'
         working-directory: android
         run: ./gradlew --no-daemon compileDebugKotlin --stacktrace 2>&1 | tail -80 || true
