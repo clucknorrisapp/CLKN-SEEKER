@@ -17,7 +17,8 @@ app:
   urls:
     license_url: https://clucknorris.app
     copyright_url: https://clucknorris.app
-    # TODO: /privacy page does not exist yet — needs adding on the public site
+    # /privacy exists (server.js app.get("/privacy")). The TODO that used to sit here,
+    # saying it did not, was stale.
     privacy_policy_url: https://clucknorris.app/privacy
     website: https://clucknorris.app
   media:
@@ -50,13 +51,15 @@ release:
         - Wallet Safety Checkup: read-only scan for approvals, honeypots, freeze/mint risk
         - Live Bags.fm launch feed: every new launch, real-time prices, trade links
 
-        PREMIUM OPERATOR TOOLS paid in CLKN micropayments (no wallet-connect,
-        no subscription): batch airdrop sender, buy-competition trackers,
-        deep-forensics tier.
+        HEAVY TOOLS behind one unified pass — batch airdrop sender,
+        buy-competition trackers, wallet forensics. Connect a wallet and either
+        hold CLKN to use them free, or buy a short-term all-tools pass in SOL.
+        No subscription, no fiat, no custody.
 
-        Guardrails first — every paid action requires an "I understand" step,
-        every page shows a stay-safe checklist, and the app never takes custody
-        or asks for your seed phrase.
+        Guardrails first — every action that costs money or cannot be undone
+        requires an "I understand" step naming the exact consequence, every page
+        shows a stay-safe checklist, and the app never takes custody or asks for
+        your seed phrase.
       new_in_version: Initial release — the full Cluck Norris school and Solana token toolkit, now native on Solana Mobile.
   media:
     - purpose: icon
@@ -89,10 +92,17 @@ release:
 solana_mobile_dapp_publisher_portal:
   # google_store_package: omitted — not published on Google Play
   testing_instructions: |
-    No account, login, or wallet connection is required. Open the app and the
-    School, Library, LP Lab, and the free token tools
-    (/autopsy, /wallet-checkup, the live Bags feed) are fully usable
-    immediately. Premium tools show free educational content and only require a
-    small one-time CLKN token payment to unlock the action — there is no fiat
-    payment and no wallet-connect. The app is a thin client that loads the live
-    clucknorris.app site, so an internet connection is required.
+    No account, login, or wallet connection is required to review the app. Open
+    it and the School, Library, LP Lab, and the free tools (/autopsy,
+    /wallet-checkup, the live Bags feed) are fully usable immediately, with no
+    wallet and no signup.
+
+    The heavy tools DO need a connected wallet. They preview for free; running
+    one resolves a "tools pass" against the connected wallet, which is satisfied
+    either by holding CLKN or by a one-click SOL payment for a short-term pass.
+    Current terms are served live from /api/tool-gate/config rather than fixed in
+    this listing, so quoting an amount here would go stale. There is no fiat
+    payment, no subscription, and the app never takes custody of funds.
+
+    The app is a thin client that loads the live clucknorris.app site, so an
+    internet connection is required.
