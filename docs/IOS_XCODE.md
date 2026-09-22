@@ -15,7 +15,7 @@ open in Xcode and looking at the right thing.*
 |---|---|
 | Capacitor target | `ios` in `capacitor.config.ts` — appId `app.clucknorris.edu`, UA marker `ClucknorrisIOS`, bundled (no `server.url`) |
 | Xcode project | **does not exist yet.** There is no `ios/` directory; `npx cap add ios` has never been run |
-| Pinned frontend | `store-edition.lock` → `ios` **1.0.3** (sourceCommit `dd115d2`, the old reflowed website). The main repo's store edition is **1.1.0** (the Seeker shell, education edition) and **no `store-ios-v1.1.0` release exists yet** |
+| Pinned frontend | `store-edition.lock` → `ios` **1.1.0** (the Seeker shell, education edition; release `store-ios-v1.1.0` cut by the owner 2026-09-22 23:38 UTC from main `12af876`, pinned at 23:40). Until then it was 1.0.3, the old reflowed website |
 | Apple developer account | not set up. Not needed for the Simulator; needed for a device, TestFlight, and every native extension in the plan |
 | App Store submission | never |
 
@@ -26,12 +26,12 @@ open in Xcode and looking at the right thing.*
    git clone https://github.com/clucknorrisapp/CLKN-SEEKER clkn-seeker && cd clkn-seeker
    git checkout claude/seeker-integration && npm install
    ```
-2. **Get the 1.1.0 iOS bundle released**, otherwise you are looking at last month's website, not
-   the app. In the MAIN repo: Actions → `store-edition-release` → Run workflow with
-   `variant=ios`, `version=1.1.0`, commit = `main` (`12af876` as of this doc). The release body
-   prints `{ version, url, sha256, sourceCommit }`. Paste those four into `store-edition.lock`
-   under `ios` and commit. (`scripts/prep-dist.mjs` refuses to build from an unpinned or
-   mismatched tarball on purpose — do not fake the pin.)
+2. **The 1.1.0 iOS bundle is released and pinned — DONE 2026-09-22** (`store-ios-v1.1.0` from
+   main `12af876`, sha256 `36e1fa02…`, in `store-edition.lock`). For the NEXT bump, the procedure
+   is: main repo → Actions → `store-edition-release` → Run workflow (`variant=ios`, the version in
+   `store-edition.json`, the exact main commit), then paste the release body's
+   `{ version, url, sha256, sourceCommit }` into the lock. (`scripts/prep-dist.mjs` refuses an
+   unpinned or mismatched tarball on purpose — never fake the pin.)
 3. **Create the Xcode project** (one-time; commit the generated `ios/` directory):
    ```bash
    npx cap add ios
