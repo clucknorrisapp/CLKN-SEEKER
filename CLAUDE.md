@@ -95,6 +95,10 @@ Don't duplicate these — read them:
 - `play-store/GATING-SPEC.md`, `play-store/STORE-EDITION-LEGAL.md` — policy constraints.
 - `play-store/BUILD-ON-MAC.md`, `play-store/RUNBOOK.md`, `play-store/PLAY-CONSOLE-CHECKLIST.md` —
   how a release actually gets made.
+- `docs/IOS_XCODE.md` — **the Mac / Xcode handoff for the iOS target** (owner, 2026-09-22: the
+  iPhone Duo work is looked at in Xcode on the Mac mini). Start there on a Mac: no `ios/`
+  project exists yet, the 1.1.0 education bundle is pinned, Xcode 27.1 beta has the iPhone Duo
+  simulator, and the scope is education-only — no wallet features.
 - `dapp-store/config.yaml` — the Solana dApp Store listing. ⚠️ Marked DRAFT, its
   `privacy_policy_url` TODO is stale, and its listing copy still advertises retired features
   (Cluck Score, Survival Simulator, Ultimate Challenge) and the retired CLKN-micropayment model.
