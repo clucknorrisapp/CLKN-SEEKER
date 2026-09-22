@@ -64,11 +64,12 @@ release:
           with every token priced first and anything of value flagged before it can burn
         - Project Burn: burn project supply and get a verifiable on-chain receipt
         - The Locker Room: lock tokens on Jupiter Lock, non-custodially, with public proof
+        - The Airdropper: send a token to many wallets at once, with a public receipt for every
+          row — no pass, no fee from us; you pay only the network's own fees and rent
         - The Project Hub: lock-to-earn programs whose terms, eligibility and payouts any holder
           can check without trusting us
 
         THE HEAVY TOOLS — behind one unified tools pass:
-        - The Airdropper: send a token to many wallets at once, with a receipt for every row
         - Wallet X-Ray, Holders and Trace: what a wallet did, who holds a token, and where
           the money went, hop by hop
         Connect a wallet and either hold CLKN worth the stated dollar amount, or pay a small SOL
@@ -118,7 +119,8 @@ solana_mobile_dapp_publisher_portal:
     Firepit, Project Burn, the Locker Room and the Project Hub need a connected wallet because
     they act on the reviewer's own tokens; they preview without one.
 
-    The Airdropper, Wallet X-Ray, Holders and Trace run on the unified tools pass: hold CLKN
+    The Airdropper needs a connected wallet too (it signs every batch) and is free: no pass,
+    no fee from us. Wallet X-Ray, Holders and Trace run on the unified tools pass: hold CLKN
     worth the stated dollar amount, or make a small one-off SOL payment for a short pass. The
     Hatchery is separate: one fee per mint, in SOL or CLKN, shown before confirming. The current
     terms are served live inside the app rather than fixed here, so quoting an amount in this

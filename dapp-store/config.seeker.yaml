@@ -63,20 +63,21 @@ release:
         - Wallet Checkup: connect your wallet and see its approvals, freeze and mint
           authority, and what each one lets someone do
 
-        WITH YOUR WALLET — signed on the phone
+        WITH YOUR WALLET — signed on the phone, free
         - Rent Reclaim (above)
+        - The Airdropper: a token to many wallets at once, with a public receipt for every
+          row. No pass, no fee from us — you pay only the network's own fees and rent
         - Firepit: burn worthless junk and reclaim the SOL under it, everything priced first
         - Project Burn: burn project supply and get a verifiable on-chain receipt
         - The Locker Room: lock tokens on Jupiter Lock, non-custodially, with public proof
 
         THE HEAVY TOOLS — one unified tools pass
-        - The Airdropper: a token to many wallets at once, with a receipt for every row
         - Wallet X-Ray, Holders, Trace: what a wallet did, who holds a token, where money went
         - Buy Special: a buy competition with standings anyone can check
-        The pass is free while you hold CLKN worth the stated dollar amount — or, in this app,
-        SKR worth the same amount. Otherwise a small one-off SOL payment buys a short pass to
-        all of them. The current terms are shown live in the app. Nothing is gated behind SKR,
-        least of all Rent Reclaim.
+        The pass is free while you hold CLKN worth its stated dollar amount — or, in this app,
+        SKR worth its own stated amount. Otherwise a small one-off SOL payment buys a short pass
+        to all of them. The current terms are shown live in the app. Nothing is gated behind
+        SKR, least of all Rent Reclaim.
 
         THE HATCHERY — priced per mint, not part of the pass
         - Mint a token properly, with the authorities set the way you meant. One fee per mint,
@@ -89,7 +90,7 @@ release:
       new_in_version: |
         First release of the Seeker edition: the school bundled on the device, Rent Reclaim,
         Firepit, Project Burn and the Locker Room signing through Mobile Wallet Adapter, the
-        Airdropper with receipts, and the SKR door on the tools pass.
+        Airdropper with receipts (free for everyone), and the SKR door on the tools pass.
   media:
     - purpose: icon
       uri: ./icon.png
@@ -108,12 +109,12 @@ solana_mobile_dapp_publisher_portal:
     No account or login. The school, Ask Cluck, Listing Checkup and the Daily work with no
     wallet; the school works with no signal. Wallet Checkup reads the connected wallet.
 
-    Rent Reclaim, Firepit, Project Burn and the Locker Room connect through Mobile Wallet
-    Adapter and sign on the device; each one previews what it will do and names the exact
-    consequence before the wallet is asked to approve.
+    Rent Reclaim, the Airdropper, Firepit, Project Burn and the Locker Room connect through
+    Mobile Wallet Adapter and sign on the device, free; each one previews what it will do and
+    names the exact consequence before the wallet is asked to approve.
 
-    The Airdropper, Wallet X-Ray, Holders, Trace and Buy Special run on the unified tools
-    pass: hold CLKN or SKR worth the stated dollar amount, or make a small one-off SOL
+    Wallet X-Ray, Holders, Trace and Buy Special run on the unified tools pass: hold CLKN
+    worth its stated dollar amount or SKR worth its own, or make a small one-off SOL
     payment. The Hatchery is separate: one fee per mint, in SOL or CLKN, shown before
     confirming. Terms are served live in the app and are not fixed here. No fiat, no
     subscription, no custody, no seed phrase.
