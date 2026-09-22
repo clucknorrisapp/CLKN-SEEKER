@@ -73,7 +73,6 @@ release:
 
         THE HEAVY TOOLS — one unified tools pass
         - Wallet X-Ray, Holders, Trace: what a wallet did, who holds a token, where money went
-        - Buy Special: a buy competition with standings anyone can check
         The pass is free while you hold CLKN worth its stated dollar amount — or, in this app,
         SKR worth its own stated amount. Otherwise a small one-off SOL payment buys a short pass
         to all of them. The current terms are shown live in the app. Nothing is gated behind
@@ -114,7 +113,7 @@ solana_mobile_dapp_publisher_portal:
     Mobile Wallet Adapter and sign on the device, free; each one previews what it will do and
     names the exact consequence before the wallet is asked to approve.
 
-    Wallet X-Ray, Holders, Trace and Buy Special run on the unified tools pass: hold CLKN
+    Wallet X-Ray, Holders and Trace run on the unified tools pass: hold CLKN
     worth its stated dollar amount or SKR worth its own, or make a small one-off SOL
     payment. The Hatchery is separate: one fee per mint, in SOL or CLKN, shown before
     confirming. Terms are served live in the app and are not fixed here. No fiat, no
