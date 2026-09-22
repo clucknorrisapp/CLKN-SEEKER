@@ -1,7 +1,15 @@
-# Solana dApp Store publishing config — DRAFT
-# Consolidates the approved listing copy + assets. Field names follow the
-# Solana Mobile publishing schema, but VALIDATE/FINALIZE against the dapp-store
-# CLI in Phase C (e.g. `npx dapp-store ...`) before submitting. TODOs marked below.
+# Solana dApp Store publishing config — the LIVE listing (android_package app.clucknorris.school).
+#
+# Rewritten 2026-09-22 (owner ask). The previous copy advertised Token Autopsy, Cluck Score, the
+# Survival Simulator, the Ultimate Challenge and a "live Bags.fm launch feed" — all retired — and a
+# CLKN-micropayment model that no longer exists. A judge or a user who opened the store page read
+# a description of an app that does not exist. Everything below describes what the app does
+# TODAY, and states no number that moves (pass terms are served live by the app, so the listing
+# never goes stale on them).
+#
+# Field names follow the Solana Mobile publishing schema; validate against the dapp-store CLI
+# before submitting. This app is a thin client that loads clucknorris.app; the bundled Seeker
+# edition for the CLOCK IN hackathon has its own listing draft in config.seeker.yaml.
 
 publisher:
   name: Cluck Norris
@@ -17,8 +25,6 @@ app:
   urls:
     license_url: https://clucknorris.app
     copyright_url: https://clucknorris.app
-    # /privacy exists (server.js app.get("/privacy")). The TODO that used to sit here,
-    # saying it did not, was stale.
     privacy_policy_url: https://clucknorris.app/privacy
     website: https://clucknorris.app
   media:
@@ -29,80 +35,90 @@ release:
   catalog:
     en-US:
       name: Cluck Norris
-      subtitle: Crypto School and Tools
-      # NOTE: trim if the CLI enforces a shorter limit (fallback: "Free crypto school + token tools")
-      short_description: Free crypto school + Solana token-safety tools
+      subtitle: Crypto school and Solana tools
+      short_description: A free crypto school plus the tools projects and holders actually use
       long_description: |
         "No participation trophies. No hand-holding. Just hard knocks."
 
-        Cluck Norris is a free school of crypto hard knocks plus a suite of
-        Solana token-research tools — built to keep first-timers alive long
-        enough to actually use crypto.
+        Cluck Norris is the School of Crypto Hard Knocks: a free Solana school wrapped around
+        real tools. People lose money in crypto because nobody told them the truth plainly.
+        The school teaches it before they get hurt; the tools let them act on it.
 
-        FREE SCHOOL, FOREVER — no signup, no wallet:
-        - The Incubator: 7 beginner lessons (wallets, tokens, on/off-ramps, DEXs, liquidity)
-        - School of Hard Knocks: 12 lessons, Freshman to Emeritus belt ranking
-        - LP Lab: a 12-lesson liquidity course with 7 interactive tools
-        - Ask Cluck: a tough-love AI crypto professor on the home screen and in every lesson
-        - "Where do I start?": a concierge that routes newcomers to the right first step
+        THE SCHOOL — free, forever. No signup, no wallet.
+        - 58 lessons across four courses: Crypto Fundamentals, the Incubator basics, the LP Lab
+          (a full liquidity course) and the Deep Dive
+        - Belt ranks from Freshman up, a quiz on every lesson, and a certificate of completion
+        - Ask Cluck: a tough-love AI professor, in every lesson and on the home screen
+        - The Solana Room: plain-language reference pages on rent, fees, wallets and the
+          things people get wrong most
+        - Seven languages: English, Spanish, Hindi, Italian, Portuguese, Vietnamese, Chinese
 
-        FREE TOKEN RESEARCH for any Solana mint:
-        - Token Autopsy: an AI forensic post-mortem on any mint
-        - Wallet Safety Checkup: read-only scan for approvals, honeypots, freeze/mint risk
-        - Live Bags.fm launch feed: every new launch, real-time prices, trade links
+        SAFETY TOOLS — free, no wallet needed:
+        - Wallet Checkup: read-only scan of any address for approvals, freeze and mint
+          authority, and what each one lets someone do
+        - Listing Checkup: the checks listing venues commonly run on a token, run on yours first
+        - Launches: what is launching, with the safety basics next to every one
 
-        HEAVY TOOLS behind one unified pass — batch airdrop sender,
-        buy-competition trackers, wallet forensics. Connect a wallet and either
-        hold CLKN to use them free, or buy a short-term all-tools pass in SOL.
+        BUILD AND HOLD — free, with your own connected wallet:
+        - Firepit: burn worthless junk tokens and reclaim the SOL rent underneath them,
+          with every token priced first and anything of value flagged before it can burn
+        - Project Burn: burn project supply and get a verifiable on-chain receipt
+        - The Locker Room: lock tokens on Jupiter Lock, non-custodially, with public proof
+        - The Project Hub: lock-to-earn programs whose terms, eligibility and payouts any holder
+          can check without trusting us
+
+        THE HEAVY TOOLS — behind one unified tools pass:
+        - The Airdropper: send a token to many wallets at once, with a receipt for every row
+        - Wallet X-Ray, Holders and Trace: what a wallet did, who holds a token, and where
+          the money went, hop by hop
+        - The Hatchery: mint a token properly, with the authorities set the way you meant
+        Connect a wallet and either hold CLKN worth the stated dollar amount, or pay a small SOL
+        amount for a short pass to all of them. The current terms are shown live inside the app.
         No subscription, no fiat, no custody.
 
-        Guardrails first — every action that costs money or cannot be undone
-        requires an "I understand" step naming the exact consequence, every page
-        shows a stay-safe checklist, and the app never takes custody or asks for
+        Guardrails first: every action that costs money or cannot be undone names its exact
+        consequence before you confirm it, the app never takes custody, and it never asks for
         your seed phrase.
-      new_in_version: Initial release — the full Cluck Norris school and Solana token toolkit, now native on Solana Mobile.
+      new_in_version: |
+        Listing brought up to date with the app as it is today: the school in seven languages,
+        the Solana Room, Wallet and Listing Checkup, Firepit, Project Burn, the Locker Room, the
+        Project Hub, the Airdropper, Wallet X-Ray, Holders, Trace and the Hatchery. Retired
+        features removed from the description.
   media:
     - purpose: icon
       uri: ./icon.png
     - purpose: banner
       uri: ./banner.png
-    # ⚠️ SCREENSHOTS NEED RECAPTURE before the next dApp Store republish — the old
-    # notes referenced RETIRED features (Ultimate Challenge, Cluck Score, Survival
-    # Simulator). Recapture from the CURRENT app: lead with the AI (Ask Cluck on the
-    # home screen + the "Where do I start?" concierge); drop any retired-feature shots.
+    # ⚠️ RECAPTURE BEFORE REPUBLISHING. 05-survival.png shows a retired feature and 06-bags.png
+    # a retired feed; 04-tools.png shows Token Autopsy, retired. Suggested set, in order: home
+    # with Ask Cluck · school home · a lesson · the LP Lab · the tools grid (current) · Firepit ·
+    # the Locker Room. Do not ship a screenshot of anything this description does not name.
     - purpose: screenshot
-      uri: ./screenshots/01-home.png        # landing hero: brand + Ask Cluck + "Where do I start?"
+      uri: ./screenshots/01-home.png
     - purpose: screenshot
-      uri: ./screenshots/02-school.png      # school home: ranks, Start School
+      uri: ./screenshots/02-school.png
     - purpose: screenshot
-      uri: ./screenshots/03-lp-lab.png      # LP Lab lessons
+      uri: ./screenshots/03-lp-lab.png
     - purpose: screenshot
-      uri: ./screenshots/04-tools.png       # Tools: Token Autopsy, Security Coop, Wallet Checkup, Hatchery
-    - purpose: screenshot
-      uri: ./screenshots/05-ask-cluck.png   # Ask Cluck AI tutor  (was 05-survival — Survival retired)
-    - purpose: screenshot
-      uri: ./screenshots/06-bags.png        # live Bags.fm launch feed
-    - purpose: screenshot
-      uri: ./screenshots/07-lesson-wallet.png  # "What is a Wallet?" lesson
+      uri: ./screenshots/07-lesson-wallet.png
   files:
     # TODO: copy the signed release APK here (or point to its build path) at submission time
     - purpose: install
       uri: ./app-release.apk
 
 solana_mobile_dapp_publisher_portal:
-  # google_store_package: omitted — not published on Google Play
   testing_instructions: |
-    No account, login, or wallet connection is required to review the app. Open
-    it and the School, Library, LP Lab, and the free tools (/autopsy,
-    /wallet-checkup, the live Bags feed) are fully usable immediately, with no
-    wallet and no signup.
+    No account, login or wallet is needed to review the app. Open it and the school (all 58
+    lessons, quizzes, Ask Cluck), the Solana Room, Wallet Checkup, Listing Checkup and
+    Launches work immediately.
 
-    The heavy tools DO need a connected wallet. They preview for free; running
-    one resolves a "tools pass" against the connected wallet, which is satisfied
-    either by holding CLKN or by a one-click SOL payment for a short-term pass.
-    Current terms are served live from /api/tool-gate/config rather than fixed in
-    this listing, so quoting an amount here would go stale. There is no fiat
-    payment, no subscription, and the app never takes custody of funds.
+    Firepit, Project Burn, the Locker Room and the Project Hub need a connected wallet because
+    they act on the reviewer's own tokens; they preview without one.
 
-    The app is a thin client that loads the live clucknorris.app site, so an
-    internet connection is required.
+    The Airdropper, Wallet X-Ray, Holders, Trace and the Hatchery run on the unified tools
+    pass: hold CLKN worth the stated dollar amount, or make a small one-off SOL payment for a
+    short pass. The current terms are served live inside the app rather than fixed here, so
+    quoting an amount in this listing would go stale. There is no fiat payment, no
+    subscription, and the app never takes custody of funds or asks for a seed phrase.
+
+    This app is a thin client that loads clucknorris.app, so an internet connection is required.
