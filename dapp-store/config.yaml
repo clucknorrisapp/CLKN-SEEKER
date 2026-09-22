@@ -47,7 +47,7 @@ release:
         THE SCHOOL — free, forever. No signup, no wallet.
         - 58 lessons across four courses: Crypto Fundamentals, the Incubator basics, the LP Lab
           (a full liquidity course) and the Deep Dive
-        - Belt ranks from Freshman up, a quiz on every lesson, and a certificate of completion
+        - Belt ranks from Freshman up, quizzes on most lessons, and a certificate of completion
         - Ask Cluck: a tough-love AI professor, in every lesson and on the home screen
         - The Solana Room: plain-language reference pages on rent, fees, wallets and the
           things people get wrong most
@@ -71,10 +71,13 @@ release:
         - The Airdropper: send a token to many wallets at once, with a receipt for every row
         - Wallet X-Ray, Holders and Trace: what a wallet did, who holds a token, and where
           the money went, hop by hop
-        - The Hatchery: mint a token properly, with the authorities set the way you meant
         Connect a wallet and either hold CLKN worth the stated dollar amount, or pay a small SOL
         amount for a short pass to all of them. The current terms are shown live inside the app.
         No subscription, no fiat, no custody.
+
+        THE HATCHERY — priced per mint, not part of the pass:
+        - Mint a token properly, with the authorities set the way you meant. One fee per mint,
+          payable in SOL or, at a discount, in CLKN; the current price is shown before you confirm.
 
         Guardrails first: every action that costs money or cannot be undone names its exact
         consequence before you confirm it, the app never takes custody, and it never asks for
@@ -115,10 +118,11 @@ solana_mobile_dapp_publisher_portal:
     Firepit, Project Burn, the Locker Room and the Project Hub need a connected wallet because
     they act on the reviewer's own tokens; they preview without one.
 
-    The Airdropper, Wallet X-Ray, Holders, Trace and the Hatchery run on the unified tools
-    pass: hold CLKN worth the stated dollar amount, or make a small one-off SOL payment for a
-    short pass. The current terms are served live inside the app rather than fixed here, so
-    quoting an amount in this listing would go stale. There is no fiat payment, no
-    subscription, and the app never takes custody of funds or asks for a seed phrase.
+    The Airdropper, Wallet X-Ray, Holders and Trace run on the unified tools pass: hold CLKN
+    worth the stated dollar amount, or make a small one-off SOL payment for a short pass. The
+    Hatchery is separate: one fee per mint, in SOL or CLKN, shown before confirming. The current
+    terms are served live inside the app rather than fixed here, so quoting an amount in this
+    listing would go stale. There is no fiat payment, no subscription, and the app never takes
+    custody of funds or asks for a seed phrase.
 
     This app is a thin client that loads clucknorris.app, so an internet connection is required.

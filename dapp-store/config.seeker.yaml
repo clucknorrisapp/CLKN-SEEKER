@@ -41,24 +41,27 @@ release:
         "No participation trophies. No hand-holding. Just hard knocks."
 
         Cluck Norris for Seeker is the School of Crypto Hard Knocks rebuilt for the phone: the
-        free school bundled on the device, and fifteen Solana tools that connect to your wallet
-        through Mobile Wallet Adapter and sign on the phone.
+        free school bundled on the device, and fourteen Solana tools — the ones that act on your
+        tokens connect to your wallet through Mobile Wallet Adapter and sign on the phone.
 
         START HERE — RENT RECLAIM
         Dead token accounts are holding your SOL. Rent Reclaim shows exactly which accounts
         can be closed and how much comes back, then closes them with your wallet's approval.
-        It accrues again over time, so it is worth opening again next month. Nothing is charged
-        for getting your own money back.
+        Every new token you touch leaves another account behind, so it is worth checking again
+        later. We charge nothing for getting your own money back; the network fee for each close
+        is shown before you approve it.
 
         THE SCHOOL — free, on the device, works with no signal
-        - 58 lessons across four courses, with quizzes, belt ranks and a certificate
+        - 58 lessons across four courses, quizzes on most of them, belt ranks; your progress
+          stays on this phone
         - Ask Cluck, a tough-love AI professor
         - Seven languages: English, Spanish, Hindi, Italian, Portuguese, Vietnamese, Chinese
 
-        FREE, NO WALLET
-        - Wallet Checkup by pasted address: approvals, freeze and mint authority, plainly
+        FREE, NO PASS
         - Listing Checkup: the checks listing venues run on a token, run on yours first
-        - Launches, and the Daily: today's lesson, one question, and where the majors closed
+        - The Daily: today's lesson, one question, and where the majors closed
+        - Wallet Checkup: connect your wallet and see its approvals, freeze and mint
+          authority, and what each one lets someone do
 
         WITH YOUR WALLET — signed on the phone
         - Rent Reclaim (above)
@@ -70,11 +73,14 @@ release:
         - The Airdropper: a token to many wallets at once, with a receipt for every row
         - Wallet X-Ray, Holders, Trace: what a wallet did, who holds a token, where money went
         - Buy Special: a buy competition with standings anyone can check
-        - The Hatchery: mint a token properly, with the authorities set the way you meant
         The pass is free while you hold CLKN worth the stated dollar amount — or, in this app,
         SKR worth the same amount. Otherwise a small one-off SOL payment buys a short pass to
         all of them. The current terms are shown live in the app. Nothing is gated behind SKR,
         least of all Rent Reclaim.
+
+        THE HATCHERY — priced per mint, not part of the pass
+        - Mint a token properly, with the authorities set the way you meant. One fee per mint,
+          in SOL or, at a discount, in CLKN; the price is shown before you confirm.
 
         WHAT IT NEVER DOES
         It never takes custody. It never asks for your seed phrase. Every action that costs
@@ -99,16 +105,17 @@ release:
 
 solana_mobile_dapp_publisher_portal:
   testing_instructions: |
-    No account or login. The school, Ask Cluck, Wallet Checkup (paste any address), Listing
-    Checkup, Launches and the Daily work with no wallet; the school works with no signal.
+    No account or login. The school, Ask Cluck, Listing Checkup and the Daily work with no
+    wallet; the school works with no signal. Wallet Checkup reads the connected wallet.
 
     Rent Reclaim, Firepit, Project Burn and the Locker Room connect through Mobile Wallet
     Adapter and sign on the device; each one previews what it will do and names the exact
     consequence before the wallet is asked to approve.
 
-    The Airdropper, Wallet X-Ray, Holders, Trace, Buy Special and the Hatchery run on the
-    unified tools pass: hold CLKN or SKR worth the stated dollar amount, or make a small
-    one-off SOL payment. Terms are served live in the app and are not fixed here. No fiat, no
+    The Airdropper, Wallet X-Ray, Holders, Trace and Buy Special run on the unified tools
+    pass: hold CLKN or SKR worth the stated dollar amount, or make a small one-off SOL
+    payment. The Hatchery is separate: one fee per mint, in SOL or CLKN, shown before
+    confirming. Terms are served live in the app and are not fixed here. No fiat, no
     subscription, no custody, no seed phrase.
 
     An internet connection is needed for every tool; the school is bundled and is not.
