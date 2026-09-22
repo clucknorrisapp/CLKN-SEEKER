@@ -60,8 +60,8 @@ release:
         FREE, NO PASS
         - Listing Checkup: the checks listing venues run on a token, run on yours first
         - The Daily: today's lesson, one question, and where the majors closed
-        - Wallet Checkup: connect your wallet and see its approvals, freeze and mint
-          authority, and what each one lets someone do
+        - Wallet Checkup: your connected wallet, or any address you paste — its approvals,
+          freeze and mint authority, and what each one lets someone do
 
         WITH YOUR WALLET — signed on the phone, free
         - Rent Reclaim (above)
@@ -106,8 +106,9 @@ release:
 
 solana_mobile_dapp_publisher_portal:
   testing_instructions: |
-    No account or login. The school, Ask Cluck, Listing Checkup and the Daily work with no
-    wallet; the school works with no signal. Wallet Checkup reads the connected wallet.
+    No account or login. The school, Ask Cluck, Listing Checkup, Wallet Checkup (any pasted
+    address) and the Daily work with no wallet; the school works with no signal. Wallet
+    Checkup also reads the connected wallet when there is one.
 
     Rent Reclaim, the Airdropper, Firepit, Project Burn and the Locker Room connect through
     Mobile Wallet Adapter and sign on the device, free; each one previews what it will do and
