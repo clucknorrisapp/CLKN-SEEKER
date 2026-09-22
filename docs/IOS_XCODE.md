@@ -39,9 +39,11 @@ open in Xcode and looking at the right thing.*
    npx cap open ios
    ```
 4. **Run it in the Simulator** — no account needed. Pick a phone first (the shell is built and
-   tested at 390×844); then the largest iPhone and an iPad to see how the layout stretches. If
-   this Xcode ships a foldable simulator, use it and **write down the inner and outer logical
-   dimensions** — the plan's two-pane layout is parameterized on them and nobody has those numbers.
+   tested at 390×844); then the largest iPhone and an iPad to see how the layout stretches. Then the
+   **iPhone Duo simulator** (Xcode 27.1 beta, iOS 27.1 runtime selected — see the section below):
+   run every pose (closed, open, rotated, half-folded) and **write down the inner and outer
+   logical dimensions in points** — the plan's two-pane layout is parameterized on them and nobody
+   has those numbers.
 5. **What to look at, and what not to**:
    - The five tabs: School first, Ask Cluck, Wallet Checkup (scan only), Listing Checkup, Daily.
      Certificate of completion at the end of a course. Seven languages from the language pill.
@@ -52,6 +54,40 @@ open in Xcode and looking at the right thing.*
    - Do **not** add wallet connect, signing, a pass sheet or a payment. Owner's scope.
 6. **Report back with**: screenshots per device size, the dimensions from step 4, and anything that
    renders wrong at widths the phone build never saw. Those go into the plan's item 1.
+
+## iPhone Duo — what Apple has published (checked 2026-09-22)
+
+- **The device is official**: announced 2026-09-09, on sale 2026-10-23. Two displays — a
+  **5.4-inch outer** (iPhone-mini-sized) and a **7.6-inch inner** (the largest iPhone display).
+  Apple's name is **iPhone Duo** (the "Fold" / "Ultra" names were rumours).
+- **The tooling exists**: **Xcode 27.1 beta** (released 2026-09-18) ships the iOS 27.1 SDK and an
+  iPhone Duo simulator that opens, closes, rotates and partially folds the device. It needs an
+  **Apple-silicon Mac on macOS 26.6 or later**, downloaded from developer.apple.com. ⚠️ The Duo
+  simulator only appears once the **iOS 27.1 runtime** is installed and selected — early
+  developers missed that and thought it was absent.
+- **Apple's guidance page**: "Preparing your app for iPhone Duo" (developer.apple.com →
+  technologyoverviews). The rules that matter for us, a Capacitor WebView app:
+  1. **The fold is a live resize, not a relaunch.** The app must keep its state when the phone
+     opens or closes. For us that is the WebView resizing: the React shell already re-flows on
+     resize, but nothing has ever been tested across an inner↔outer switch mid-lesson (the plan's
+     item 1 is exactly this test).
+  2. **Size classes, not orientation checks.** Closed = ordinary iPhone size classes; open =
+     regular×regular, i.e. **the inner display is iPad-shaped for layout**, and it does not honour
+     the app's supported-orientation list. In CSS terms: design the open pose like the iPad width,
+     with container queries, not `orientation:` media queries.
+  3. **Safe areas are asymmetric.** Left and right insets differ; handle each side on its own
+     (`env(safe-area-inset-left)` / `-right` separately, never one padding for both).
+  4. **Reserved regions (iOS 27.1 API)**: `.division` is the fold line (active only when folded,
+     zero-width when flat) and `.occlusion` is the under-display camera. A WebView does not see
+     these; a Capacitor plugin would have to bridge `reservedRegions` to JavaScript if the two-pane
+     layout ever needs to avoid the crease. Standard native containers avoid them for free; our
+     shell is not native, so this is on us.
+  5. **Apps built against the iOS 26 SDK need an iOS 27 rebuild** for basic Duo compatibility;
+     apps built for **iOS 27.1** get the full inner display. So the Xcode project from step 3
+     should be created and built with Xcode 27.1 from the start.
+- Xcode 27.1 also ships an **App Resizability modernization skill** (a coding-agent skill that
+  finds and fixes resizability issues) and a resizable Simulator. Worth running against the shell
+  once it opens.
 
 ## When the Apple account exists
 
