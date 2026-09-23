@@ -37,6 +37,10 @@ const targets: Record<string, CapacitorConfig> = {
   googlePlay: {
     ...common,
     appId: 'app.clucknorris.edu',
+    // The webview's own background before the bundle paints. Without it the cold start is a
+    // WHITE screen until the first paint (~19 s on a cold simulator, found 2026-09-22 on iOS) —
+    // it reads as a crash. Matches seeker.html's theme-color / the shell's --bg.
+    backgroundColor: '#0b0c0e',
     android: { appendUserAgent: 'ClucknorrisPlay' },
   },
   // ── SEEKER edition — bundled, no server.url. ──
@@ -52,11 +56,13 @@ const targets: Record<string, CapacitorConfig> = {
   seeker: {
     ...common,
     appId: 'app.clucknorris.seeker',
+    backgroundColor: '#0b0c0e',
   },
   // ── STORE edition (Apple App Store) — bundled, no server.url. ──
   ios: {
     ...common,
     appId: 'app.clucknorris.edu',
+    backgroundColor: '#0b0c0e',
     ios: { appendUserAgent: 'ClucknorrisIOS' },
   },
 };
