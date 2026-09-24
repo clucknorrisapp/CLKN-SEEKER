@@ -1,0 +1,307 @@
+# Ship an iOS build to TestFlight — cloud-signed with the App Store Connect API key.
+#
+# Written 2026-09-24. Companion to android-build.yml, same house rule: nothing here weakens the
+# store-edition pin. `npm run build:ios` calls `prep:store`, which downloads and verifies the
+# PINNED, CHECKSUMMED ios release from store-edition.lock (scripts/prep-dist.mjs) — this workflow
+# never bypasses that, and never should.
+#
+# Manual trigger only (workflow_dispatch). There is no push trigger: an iOS archive + upload
+# costs real minutes on a macOS runner and touches App Store Connect, so it runs on request, not
+# on every push the way android-build.yml's compile check does.
+#
+# SIGNING. Preferred and default: CLOUD (managed) signing via the App Store Connect API key —
+# `-allowProvisioningUpdates` lets xcodebuild mint/renew the distribution certificate and
+# provisioning profile itself, authenticated with the same key used to upload. Three repository
+# secrets already exist for this (Account Holder, 2026-09-24): ASC_API_KEY_P8, ASC_API_KEY_ID,
+# ASC_API_ISSUER_ID. No certificate secret exists yet — this is expected on a first run; see the
+# OPTIONAL fallback below and docs/IOS_TESTFLIGHT.md for what a "no signing certificate" failure
+# means and how the owner produces one.
+#
+# OPTIONAL fallback — a pre-issued .p12 distribution identity. If (and only if) the repo secrets
+# IOS_DIST_P12_BASE64 and IOS_DIST_P12_PASSWORD are BOTH set, this workflow imports that identity
+# into a temporary CI keychain before archiving, so xcodebuild can sign even if cloud
+# (-allowProvisioningUpdates) signing fails for some account-permission reason. `if:` conditions
+# cannot read `secrets.*` directly, so a prior step computes HAVE_P12 into $GITHUB_ENV from
+# whether the secret STRING is non-empty, and every p12 step gates on that computed value. The
+# temporary keychain is deleted in an `always()` step so a failed run never leaves a signing
+# identity sitting on the runner (moot on GitHub-hosted macOS runners, which are ephemeral, but
+# cheap insurance and the right habit if this ever runs self-hosted).
+#
+# RUNNER. macos-15 — at the time this was written it is the newest macOS label GitHub documents
+# for hosted runners (macos-26 / a later "-latest" alias may exist by the time this runs; if
+# `macos-15` is ever retired, GitHub's own deprecation notice on the Actions run is the signal to
+# bump this literal, not a guess).
+#
+# What a green run here does and does not mean:
+#   ✅ the app archives, exports/signs for App Store distribution, and (when submit=true)
+#      uploads to App Store Connect
+#   ❌ it does NOT mean Apple has finished processing the build, or that TestFlight review has
+#      passed — that is Apple's own pipeline, 10-30 minutes after a successful upload, and no CI
+#      step here can see the outcome of it.
+name: iOS TestFlight
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: >-
+          MARKETING_VERSION to stamp on the build. Leave blank to use the version currently
+          pinned for ios in store-edition.lock (e.g. "1.1.1") — that pin is read at run time, not
+          hardcoded here, so it never drifts from this default description.
+        required: false
+        default: ""
+      build_number:
+        description: "CURRENT_PROJECT_VERSION (build number). Leave blank to use this run's number (github.run_number)."
+        required: false
+        default: ""
+      submit:
+        description: "Upload to App Store Connect / TestFlight. false = archive + export only, .ipa is an artifact."
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  testflight:
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      SCHEME: App
+      PROJECT_PATH: ios/App/App.xcodeproj
+      ARCHIVE_PATH: build/App.xcarchive
+      EXPORT_PATH: build/export
+      TEAM_ID: "6WAQ6L3CN3"
+    steps:
+      - uses: actions/checkout@v4
+
+      # 22, not 20: the Capacitor 8 CLI hard-refuses anything below 22 ("The Capacitor CLI
+      # requires NodeJS >=22.0.0") and exits 1 at `cap sync` — same trap as android-build.yml.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: install deps
+        run: npm ci
+
+      # Same content-scan guard android-build.yml runs. Cheap, and it is the one automated check
+      # that the pinned bundle's variant rules (education vs. seeker) still hold.
+      - name: bundle guard test
+        run: node scripts/prep-dist-guard-test.mjs
+
+      # Resolve the effective version/build BEFORE anything touches Xcode. workflow_dispatch
+      # input `default:` cannot hold an expression (no ${{ }} evaluation there), so "default to
+      # the lock's pin" / "default to the run number" both have to be resolved here, not in the
+      # trigger block above.
+      - name: resolve version and build number
+        id: resolve
+        run: |
+          set -euo pipefail
+          VERSION="${{ inputs.version }}"
+          if [ -z "$VERSION" ]; then
+            VERSION=$(node -p "require('./store-edition.lock').ios.version")
+            echo "no version input — using store-edition.lock ios pin: $VERSION"
+          fi
+          BUILD="${{ inputs.build_number }}"
+          if [ -z "$BUILD" ]; then
+            BUILD="${{ github.run_number }}"
+            echo "no build_number input — using the run number: $BUILD"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "build=$BUILD" >> "$GITHUB_OUTPUT"
+
+      # CLKN_TARGET=ios inside the npm script: verifies + downloads the PINNED store-edition
+      # release for ios (scripts/prep-dist.mjs `store` mode) into dist/, then `cap sync ios`
+      # copies it into ios/App/App/public and refreshes the Capacitor Swift package list. This
+      # is the only source of dist/ content in this workflow — never write dist/ by hand here.
+      - name: build:ios (prep + cap sync)
+        run: npm run build:ios
+
+      # Capacitor 8 with the CapApp-SPM local Swift package generates NO .xcworkspace — Podfile
+      # integration is what produces one, and this project has none (no CocoaPods anywhere in
+      # ios/). `find` here isn't decorative: if a future `cap sync` ever starts emitting a
+      # workspace (e.g. a plugin that adds CocoaPods), this fails loudly instead of silently
+      # building the stale .xcodeproj target next to an unused .xcworkspace.
+      - name: confirm workspace vs. project shape
+        run: |
+          set -euo pipefail
+          # A STANDALONE ios/App/App.xcworkspace (as opposed to the project.xcworkspace nested
+          # inside every .xcodeproj, which is not what this checks) only appears once CocoaPods
+          # integration runs (`pod install`). There is no Podfile anywhere in ios/ today — the
+          # Capacitor Swift package (CapApp-SPM) covers the native deps — so this builds
+          # App.xcodeproj directly. If a future plugin adds CocoaPods, this fails loudly instead
+          # of silently building the now-stale .xcodeproj target next to the real .xcworkspace.
+          if [ -d "ios/App/App.xcworkspace" ] || [ -f "ios/App/Podfile" ]; then
+            echo "A standalone .xcworkspace or Podfile now exists — this build must switch to '-workspace ios/App/App.xcworkspace' instead of '-project $PROJECT_PATH'." >&2
+            exit 1
+          fi
+          echo "confirmed: SPM-only project (CapApp-SPM), no CocoaPods, no standalone .xcworkspace — building $PROJECT_PATH directly."
+
+      # Never echoed, never logged. xcodebuild / altool look for API keys under
+      # ~/private_keys/AuthKey_<ID>.p8 by convention.
+      - name: write the App Store Connect API key
+        env:
+          ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/private_keys
+          printf '%s' "$ASC_API_KEY_P8" > ~/private_keys/AuthKey_${ASC_API_KEY_ID}.p8
+          chmod 600 ~/private_keys/AuthKey_${ASC_API_KEY_ID}.p8
+
+      # Computed here, not read directly in `if:` — `if:` conditions cannot see secrets.*, only
+      # steps/env output, so this is the one place that may touch the secret's presence.
+      - name: check for an optional pre-issued distribution identity
+        run: |
+          if [ -n "${{ secrets.IOS_DIST_P12_BASE64 }}" ] && [ -n "${{ secrets.IOS_DIST_P12_PASSWORD }}" ]; then
+            echo "HAVE_P12=true" >> "$GITHUB_ENV"
+          else
+            echo "HAVE_P12=false" >> "$GITHUB_ENV"
+            echo "no IOS_DIST_P12_BASE64 / IOS_DIST_P12_PASSWORD secret pair — relying on cloud (-allowProvisioningUpdates) signing only."
+          fi
+
+      # OPTIONAL fallback, skipped cleanly when the two p12 secrets are absent (the default,
+      # expected state on a first run per the task brief). Imports a pre-issued Apple
+      # Distribution identity into a throwaway CI keychain so xcodebuild can sign even if
+      # managed/cloud signing cannot for some account-permission reason.
+      - name: import distribution certificate (optional fallback)
+        if: ${{ env.HAVE_P12 == 'true' }}
+        env:
+          IOS_DIST_P12_BASE64: ${{ secrets.IOS_DIST_P12_BASE64 }}
+          IOS_DIST_P12_PASSWORD: ${{ secrets.IOS_DIST_P12_PASSWORD }}
+        run: |
+          set -euo pipefail
+          KEYCHAIN=ci-signing.keychain-db
+          KEYCHAIN_PASSWORD=$(uuidgen)
+          echo "KEYCHAIN_PASSWORD=$KEYCHAIN_PASSWORD" >> "$GITHUB_ENV"
+          echo "KEYCHAIN_PATH=$RUNNER_TEMP/$KEYCHAIN" >> "$GITHUB_ENV"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$RUNNER_TEMP/$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$RUNNER_TEMP/$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$RUNNER_TEMP/$KEYCHAIN"
+          P12_PATH="$RUNNER_TEMP/dist.p12"
+          echo "$IOS_DIST_P12_BASE64" | base64 --decode > "$P12_PATH"
+          security import "$P12_PATH" -k "$RUNNER_TEMP/$KEYCHAIN" -P "$IOS_DIST_P12_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$RUNNER_TEMP/$KEYCHAIN"
+          security list-keychains -d user -s "$RUNNER_TEMP/$KEYCHAIN" $(security list-keychains -d user | sed 's/"//g')
+          rm -f "$P12_PATH"
+
+      # ARCHIVE — cloud signing. `-allowProvisioningUpdates` (+ `-allowProvisioningDeviceRegistration`)
+      # lets xcodebuild use the ASC API key to mint/renew whatever certificate and profile the
+      # build needs; it works whether or not the optional p12 above was imported, because a
+      # matching identity in the keychain (when present) is just one more thing xcodebuild can
+      # find instead of requesting a new one.
+      - name: archive (xcodebuild, cloud-signed via App Store Connect API key)
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_API_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          xcodebuild \
+            -project "$PROJECT_PATH" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$ARCHIVE_PATH" \
+            archive \
+            -allowProvisioningUpdates \
+            -allowProvisioningDeviceRegistration \
+            -authenticationKeyPath ~/private_keys/AuthKey_${ASC_KEY_ID}.p8 \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            DEVELOPMENT_TEAM="$TEAM_ID" \
+            CODE_SIGN_STYLE=Automatic \
+            MARKETING_VERSION="${{ steps.resolve.outputs.version }}" \
+            CURRENT_PROJECT_VERSION="${{ steps.resolve.outputs.build }}" \
+            2>&1 | tee build/archive.log
+
+      # method "app-store-connect" is the Xcode 15+ name; "app-store" is kept working by Xcode as
+      # an alias for older tooling. destination:
+      #   - submit=true  → "upload": xcodebuild both re-signs for the store AND uploads to App
+      #     Store Connect in the same -exportArchive call — there is no separate upload step.
+      #   - submit=false → "export": produces build/export/*.ipa locally and stops there.
+      - name: write ExportOptions.plist
+        run: |
+          set -euo pipefail
+          DESTINATION="export"
+          if [ "${{ inputs.submit }}" = "true" ]; then
+            DESTINATION="upload"
+          fi
+          cat > ExportOptions.plist <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store-connect</string>
+            <key>teamID</key>
+            <string>${TEAM_ID}</string>
+            <key>signingStyle</key>
+            <string>automatic</string>
+            <key>uploadSymbols</key>
+            <true/>
+            <key>destination</key>
+            <string>${DESTINATION}</string>
+          </dict>
+          </plist>
+          PLIST
+          echo "destination=$DESTINATION" >> "$GITHUB_ENV"
+
+      # EXPORT (+ upload, when destination=upload). Same three authentication flags as the
+      # archive step — the export/upload call authenticates independently.
+      - name: export (and upload, if submit=true)
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_API_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$EXPORT_PATH"
+          xcodebuild \
+            -exportArchive \
+            -archivePath "$ARCHIVE_PATH" \
+            -exportOptionsPlist ExportOptions.plist \
+            -exportPath "$EXPORT_PATH" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_${ASC_KEY_ID}.p8 \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            2>&1 | tee build/export.log
+
+      # Only meaningful (and only present) when destination=export — an upload leaves nothing
+      # local to publish an artifact from.
+      - name: upload .ipa artifact (archive + export only, submit=false)
+        if: ${{ inputs.submit != 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cluck-ios-ipa
+          path: build/export/*.ipa
+          if-no-files-found: error
+          retention-days: 30
+
+      # Runs whenever the job failed — the xcodebuild logs are the single most useful thing this
+      # workflow can report, same reasoning as android-build.yml's "compile errors, if any" step.
+      - name: upload build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build-logs
+          path: build/*.log
+          if-no-files-found: ignore
+          retention-days: 30
+
+      # Always runs, success or failure: never leave a signing identity behind on the runner.
+      - name: delete the temporary signing keychain
+        if: ${{ always() && env.HAVE_P12 == 'true' }}
+        run: |
+          security delete-keychain "$KEYCHAIN_PATH" || true
+          security list-keychains -d user -s $(security list-keychains -d user | sed 's/"//g' | grep -v "$(basename "$KEYCHAIN_PATH")")
+
+      - name: summary
+        if: success()
+        run: |
+          echo "version:       ${{ steps.resolve.outputs.version }}"
+          echo "build number:  ${{ steps.resolve.outputs.build }}"
+          if [ "${{ inputs.submit }}" = "true" ]; then
+            echo "uploaded — processing takes 10-30 minutes; it appears under TestFlight in App Store Connect."
+          else
+            echo "submit=false — archived and exported only. The .ipa is the 'cluck-ios-ipa' artifact on this run, not uploaded."
+          fi
