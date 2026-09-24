@@ -1,0 +1,52 @@
+# Read-only App Store Connect build status check. No Xcode, no signing, no macOS runner — just
+# GET /v1/apps and GET /v1/builds with an App Manager-role API key (the same three secrets
+# ios-testflight.yml already uses: ASC_API_KEY_ID, ASC_API_ISSUER_ID, ASC_API_KEY_P8). Useful
+# after a TestFlight upload to check whether Apple finished processing without opening the App
+# Store Connect UI.
+#
+# A FAILED/INVALID processingState is information this workflow reports, not a run failure — the
+# job only fails on auth/network errors (bad or missing secrets, Apple unreachable) or a malformed
+# response, per scripts/asc-build-status.mjs's own exit-code contract.
+
+name: iOS Build Status
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "MARKETING_VERSION to look up builds for."
+        required: false
+        default: "1.1.1"
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: check build processing state
+        id: status
+        env:
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_API_ISSUER_ID: ${{ secrets.ASC_API_ISSUER_ID }}
+          ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
+          BUILD_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          node scripts/asc-build-status.mjs --version "$BUILD_VERSION" | tee build-status.txt
+
+      - name: write job summary
+        if: always()
+        run: |
+          {
+            echo "## iOS build status — version ${{ inputs.version }}"
+            echo
+            echo '```'
+            cat build-status.txt 2>/dev/null || echo "(no output captured)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

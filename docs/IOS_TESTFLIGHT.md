@@ -219,3 +219,28 @@ CI checkout has no access to. The manual-signing `sigh` fetch was written from r
 published `sigh` documentation, not from running it — see the "Uncertainty about `sigh`'s exact CLI
 surface" note above. The first real run of this workflow is this project's first time an
 `xcodebuild archive` of it has ever executed anywhere.
+
+## Checking a build's processing state
+
+`ios-build-status.yml` is a separate, read-only workflow — `ubuntu-latest`, no Xcode, no
+signing, just `GET /v1/apps` and `GET /v1/builds` against App Store Connect with the same
+`ASC_API_KEY_ID` / `ASC_API_ISSUER_ID` / `ASC_API_KEY_P8` secrets above. It prints a table of the
+last five builds for a given `MARKETING_VERSION` — build number, uploaded date, processing state
+(`PROCESSING` / `VALID` / `FAILED` / `INVALID`), internal/external TestFlight beta state, and
+whether the build has expired — both to the job log and to the run's summary page.
+
+Trigger it from the CLI:
+
+```
+gh workflow run ios-build-status.yml --ref claude/seeker-integration -f version=1.1.1
+```
+
+or from the Actions tab (Run workflow → pick the branch → optionally override `version`, default
+`1.1.1`).
+
+A `FAILED` or `INVALID` processing state is reported, not a workflow failure — the job only fails
+on an auth or network error (bad/missing secrets, App Store Connect unreachable) or a malformed
+API response. The underlying script (`scripts/asc-build-status.mjs`) mints its own App Store
+Connect API JWT with Node's built-in `crypto` (ES256) rather than pulling in a JWT library; run it
+with `--selftest` to mint-and-verify a token against a throwaway EC P-256 key with no network
+call, as a sanity check that the signing shape is still right.
