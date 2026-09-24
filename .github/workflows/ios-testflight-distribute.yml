@@ -1,0 +1,85 @@
+# Distributes an already-uploaded, already-VALID App Store Connect build to a TestFlight beta
+# group: export compliance, find-or-create the group, attach the build, add testers, print a
+# status table. No Xcode, no signing, no macOS runner — the same App Manager-role API key
+# ios-testflight.yml and ios-build-status.yml already use (ASC_API_KEY_ID, ASC_API_ISSUER_ID,
+# ASC_API_KEY_P8).
+#
+# This workflow never uploads a binary (that's ios-testflight.yml) and never dispatches
+# xcodebuild. Run ios-build-status.yml first to confirm the build you want is VALID.
+#
+# Per-tester and per-step problems (e.g. an internal group refusing a non-team-member tester) are
+# printed as warnings and do not fail the job — see scripts/asc-testflight-distribute.mjs's own
+# exit-code contract. The job only fails on an auth/network error or when the requested build
+# cannot be resolved (wrong version/build_number, or no VALID build exists for that version).
+
+name: iOS TestFlight Distribute
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "MARKETING_VERSION of the build to distribute."
+        required: false
+        default: "1.1.1"
+      build_number:
+        description: "CURRENT_PROJECT_VERSION (build number). Leave blank to use the newest VALID build of `version`."
+        required: false
+        default: ""
+      group:
+        description: "TestFlight beta group name. Created (internal, falling back to external) if it doesn't exist."
+        required: false
+        default: "testers"
+      testers:
+        description: "Comma-separated emails to add, optionally `email:First:Last`. Leave blank to skip adding testers."
+        required: false
+        default: ""
+      feedback_email:
+        description: "Optional beta app review contact email (best-effort; skipped on failure)."
+        required: false
+        default: ""
+
+jobs:
+  distribute:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: distribute build to TestFlight group
+        id: distribute
+        shell: bash
+        env:
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_API_ISSUER_ID: ${{ secrets.ASC_API_ISSUER_ID }}
+          ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
+          VERSION: ${{ inputs.version }}
+          BUILD_NUMBER: ${{ inputs.build_number }}
+          GROUP: ${{ inputs.group }}
+          TESTERS: ${{ inputs.testers }}
+          FEEDBACK_EMAIL: ${{ inputs.feedback_email }}
+        run: |
+          set -uo pipefail
+          node scripts/asc-testflight-distribute.mjs \
+            --version "$VERSION" \
+            ${BUILD_NUMBER:+--build_number "$BUILD_NUMBER"} \
+            --group "$GROUP" \
+            ${TESTERS:+--testers "$TESTERS"} \
+            ${FEEDBACK_EMAIL:+--feedback_email "$FEEDBACK_EMAIL"} \
+            2>&1 | tee distribute-output.txt
+          exit "${PIPESTATUS[0]}"
+
+      - name: write job summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## iOS TestFlight distribute — version ${{ inputs.version }}, group ${{ inputs.group }}"
+            echo
+            echo '```'
+            cat distribute-output.txt 2>/dev/null || echo "(no output captured)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

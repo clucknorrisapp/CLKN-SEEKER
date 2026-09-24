@@ -244,3 +244,73 @@ API response. The underlying script (`scripts/asc-build-status.mjs`) mints its o
 Connect API JWT with Node's built-in `crypto` (ES256) rather than pulling in a JWT library; run it
 with `--selftest` to mint-and-verify a token against a throwaway EC P-256 key with no network
 call, as a sanity check that the signing shape is still right.
+
+The JWT-minting code itself (`base64url`, `mintToken`, the tiny fetch wrapper) was extracted on
+2026-09-24 into `scripts/lib/asc-client.mjs` so a second script doesn't grow a second copy of it.
+`asc-build-status.mjs` now imports from there; nothing about its behavior, output, or `--selftest`
+changed.
+
+## Distributing a build to testers from the API
+
+`.github/workflows/ios-testflight-distribute.yml` runs `scripts/asc-testflight-distribute.mjs` to
+take a build that's **already uploaded and already `VALID`** (check with `ios-build-status.yml`
+first) and put it in front of testers — without touching Xcode, signing, or the upload step. Same
+App Manager-role secrets as everything else here: `ASC_API_KEY_ID`, `ASC_API_ISSUER_ID`,
+`ASC_API_KEY_P8`.
+
+What it does, in order, and idempotently — re-running it is safe:
+
+1. **Resolve the build.** By `version` (MARKETING_VERSION) and app bundle id
+   `app.clucknorris.edu`; `build_number` (CURRENT_PROJECT_VERSION) narrows to one build if given,
+   otherwise it picks the newest build in `PROCESSING`/`FAILED`/`INVALID`/`VALID` state that is
+   actually `VALID`. A build that never finished processing, or exists only under a different
+   build number, is a **fatal** error (exit 1) — there is nothing to distribute.
+2. **Export compliance.** `GET`s the build's `usesNonExemptEncryption`; if Apple has no answer yet
+   (`null`), `PATCH`es it to `false` — the app declares `ITSAppUsesNonExemptEncryption=false`.
+   Already-set values are left alone.
+3. **Beta group.** Looks up a group named `group` (default `testers`) on the app; creates it if
+   missing. Tries an **internal** group first (`isInternalGroup:true`, `hasAccessToAllBuilds:true`,
+   retried without `hasAccessToAllBuilds` if the API rejects that combination), and falls back to
+   an **external** group of the same name if internal creation is refused outright — some
+   App Manager keys can't create internal groups. An external group needs Apple's beta review
+   for its first build; the script says so when it falls back.
+4. **Attach the build** to the group. A 409 (already attached) is treated as success, not a
+   warning.
+5. **Testers**, from `--testers "a@b.com,c@d.com:First:Last"` (name parts optional): looked up by
+   email, created if absent, or attached to the group if they already exist elsewhere. **Internal**
+   groups require the tester to already be a team member (App Store Connect → Users and Access) —
+   when Apple's error says so, the script prints the exact detail plus "add this person under
+   Users and Access first, or use an external group" and moves on to the next tester rather than
+   failing the run.
+6. **Final table**: the build's internal/external beta state, the group, and every tester's invite
+   state. Emails are **masked everywhere** — first two characters + `***` + domain — in the job
+   log and the step summary alike; only the API calls themselves ever see a full address.
+
+An optional `feedback_email` sets the app's beta-app-review contact email; it's best-effort and
+never fails the run.
+
+**Exit codes** (`scripts/asc-testflight-distribute.mjs`, same contract as `asc-build-status.mjs`):
+0 on a completed run, even with per-tester or per-step warnings printed along the way; 1 only on a
+missing/bad ASC secret, a network error, or a build that can't be resolved. `--selftest` mints and
+verifies a JWT the same way `asc-build-status.mjs --selftest` does, plus checks the email-masking
+and tester-parsing helpers, with no network call.
+
+Trigger it from the CLI:
+
+```
+gh workflow run ios-testflight-distribute.yml --ref claude/seeker-integration \
+  -f version=1.1.1 -f group=testers -f testers="a@example.com,b@example.com:First:Last"
+```
+
+or from the Actions tab (Run workflow → pick the branch → fill in `version`, `build_number`
+(optional), `group`, `testers`, `feedback_email` (optional)).
+
+⚠️ **Never verified end-to-end.** No container running this workflow's author has App Store
+Connect credentials, so `resolveBuild`, `ensureBetaGroup`, `ensureTester`, and the export-compliance
+PATCH were written from Apple's published `betaGroups`/`betaTesters`/`builds` schema, not from a
+real run against it. In particular: whether an App Manager-role key can create an **internal**
+group at all (vs. only external), and whether `hasAccessToAllBuilds` is accepted on creation, are
+both untested — the two-attempt-then-external-fallback exists because that uncertainty is real, not
+decorative. The `betaAppReviewDetails.contactEmail` shape for `feedback_email` is the same:
+plausible from the schema, best-effort, never fatal if wrong. The first real run of this workflow
+is this project's first live test of all of it.
