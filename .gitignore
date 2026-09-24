@@ -4,6 +4,10 @@ node_modules/
 # Build output (Vite)
 dist/
 
+# Local dev-bundle cache (scripts/build-edu-dev-bundle.mjs) — a cloned school repo + built
+# tarballs, never anything that ships
+.cache/
+
 # Logs
 *.log
 npm-debug.log*

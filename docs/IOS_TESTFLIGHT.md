@@ -220,6 +220,55 @@ published `sigh` documentation, not from running it — see the "Uncertainty abo
 surface" note above. The first real run of this workflow is this project's first time an
 `xcodebuild archive` of it has ever executed anywhere.
 
+## Looking at develop in Xcode without a release
+
+The workflow above ships a **pinned** `ios` bundle from `store-edition.lock` — that needs a git tag
+only the owner pushes, which is correct for anything that ships. But looking at what's on the
+school repo's `develop` branch in your own Xcode, on your own Mac, shouldn't need a tag at all.
+`ios-dev` is that path: an unpinned, locally built copy of the education edition, installed under
+its own app id so it sits beside the real store app instead of replacing it.
+
+```
+git pull origin claude/seeker-integration
+npm run build:ios-dev
+open ios/App/App.xcodeproj
+```
+
+`npm run build:ios-dev`:
+
+1. clones (or updates a cached clone of) `clucknorrisapp/cluck-norris-school` at `develop` into
+   `.cache/cluck-norris-school` (override the ref with `CLKN_REF=<branch|sha> npm run build:ios-dev`),
+   `npm ci`s it, and runs `node scripts/build-store-edition.mjs ios` there — the exact same build
+   the pinned release path consumes, just not tagged or checksummed against `store-edition.lock`;
+2. drops the resulting tarball into `dist/` via `prep-dist.mjs ios-dev`, which runs the **same**
+   education-only content scan the pinned `ios` build runs (`scanBundle("ios")` — no wallet
+   script, no swap link, no CLKN mint, no referral, no on-chain signing; a bundle that fails this
+   scan is refused here exactly as it would be on the real release path);
+3. `npx cap sync ios` to wire the fresh `dist/` into the Xcode project.
+
+**What the dev app id means.** `CLKN_TARGET=ios-dev` selects a separate entry in
+`capacitor.config.ts`: appId `app.clucknorris.edu.dev`, name "Cluck Norris (dev)". It installs
+**beside** the real `app.clucknorris.edu` store app on a simulator or device rather than
+overwriting it — you can keep both.
+
+⚠️ **This bundle is unpinned and must never be uploaded to TestFlight or the App Store.**
+`dist/DEV_BUILD_DO_NOT_PUBLISH.txt` says so in the folder itself. What actually guarantees a real
+release can't reach it: `build:ios` (the script the TestFlight workflow and `docs/IOS_XCODE.md`
+both use) runs `prep:store` → `prep-dist.mjs store`, a **different mode** in that script than
+`ios-dev` — the release path has no code path into the dev one, not a flag that happens to be off.
+`scripts/prep-dist-guard-test.mjs` pins both directions: `build:ios` never mentions `ios-dev` (or
+`play-dev`/`seeker-dev`), and `ios-dev` itself refuses to run at all without `CLKN_IOS_DEV=1` set
+explicitly, so it can't be entered by a stray env var either.
+
+If you just want to rebuild against whatever the cached clone already has (no fresh clone/`npm
+ci`), run the steps by hand:
+
+```
+node scripts/build-edu-dev-bundle.mjs --ref develop   # prints the tarball path
+CLKN_TARGET=ios-dev CLKN_IOS_DEV=1 CLKN_IOS_DEV_TGZ=<path printed> npm run prep:ios-dev
+npx cap sync ios
+```
+
 ## Checking a build's processing state
 
 `ios-build-status.yml` is a separate, read-only workflow — `ubuntu-latest`, no Xcode, no

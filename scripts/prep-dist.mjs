@@ -364,5 +364,74 @@ if (mode === "play-dev") {
   process.exit(0);
 }
 
-console.error('prep-dist: usage — node scripts/prep-dist.mjs <solana|store|seeker-dev|play-dev>');
+if (mode === "ios-dev") {
+  // ── THE iOS EDUCATION EDITION IN XCODE TODAY, WITHOUT A PUBLISHED RELEASE. ──
+  //
+  // The iOS twin of `play-dev`. `npm run build:ios` consumes a pinned, checksummed release
+  // (store-edition.lock's "ios" entry) and that needs a tag only the owner pushes — but the
+  // owner wants to look at `develop` in his own Xcode on his own Mac, and a tag is exactly the
+  // step that shouldn't be needed just to LOOK. This mode takes a LOCALLY BUILT bundle instead
+  // (main repo: `node scripts/build-edu-dev-bundle.mjs` → a store-edition-ios-<v>.tgz — same
+  // artifact `node scripts/build-store-edition.mjs ios` produces there) and drops it straight
+  // into dist/ so `npx cap sync ios` + Xcode can run it on a simulator or a device.
+  //
+  // ⛔ IT CANNOT BE USED TO SHIP, for the same four independent reasons as play-dev/seeker-dev:
+  //   1. a separate MODE — `build:ios` calls `prep:store` and never reaches this code;
+  //   2. it demands CLKN_IOS_DEV=1 explicitly;
+  //   3. its own applicationId, app.clucknorris.edu.dev (capacitor.config.ts CLKN_TARGET=ios-dev)
+  //      — installs beside the real store app on the same device, never overwrites it;
+  //   4. it stamps dist/ with DEV_BUILD_DO_NOT_PUBLISH.txt.
+  //
+  // And it runs the SAME scan the release path runs for CLKN_TARGET=ios — scanBundle("ios"), the
+  // EDUCATION rule set (a wallet script, a swap link, the mint, a referral, signing code refused
+  // exactly as in the pinned build). A dev build that skipped a check the store build makes would
+  // let you test something the store build would have refused.
+  if (process.env.CLKN_IOS_DEV !== "1") {
+    console.error(
+      "\nprep-dist: ios-dev refused — set CLKN_IOS_DEV=1 to mean it.\n" +
+      "This mode bundles an UNPINNED, locally built education-edition frontend. It is for looking\n" +
+      "at develop in Xcode, never for anything that ships. Use `npm run build:ios` for that.\n"
+    );
+    process.exit(1);
+  }
+  const tgz = process.env.CLKN_IOS_DEV_TGZ;
+  if (!tgz || !existsSync(tgz)) {
+    console.error(
+      `\nprep-dist: ios-dev needs CLKN_IOS_DEV_TGZ pointing at a local bundle.\n` +
+      (tgz ? `  no such file: ${tgz}\n` : "  (unset)\n") +
+      `Build one with:\n  node scripts/build-edu-dev-bundle.mjs\n` +
+      `(or in the school repo directly: node scripts/build-store-edition.mjs ios)\n` +
+      `then point this at the resulting store-edition-ios-<version>.tgz\n`
+    );
+    process.exit(1);
+  }
+
+  resetDist();
+  execFileSync("tar", ["-xzf", tgz, "-C", DIST, "--strip-components=1"], { stdio: "inherit" });
+  if (!existsSync(join(DIST, "index.html"))) {
+    console.error("prep-dist: that tarball has no index.html at root — wrong artifact shape?");
+    process.exit(1);
+  }
+
+  // The same rules `build:ios` enforces (CLKN_TARGET=ios → variant "ios"). Not a relaxed copy.
+  scanBundle("ios");
+
+  writeFileSync(
+    join(DIST, "DEV_BUILD_DO_NOT_PUBLISH.txt"),
+    "This bundle was assembled by `prep-dist.mjs ios-dev` from an UNPINNED local build of the\n" +
+    "school repo's `develop` (or whatever --ref was given).\n" +
+    "It exists so the iOS education edition can be looked at in Xcode before a release tag exists.\n" +
+    "It is NOT checksummed against a published release and must never be shipped.\n" +
+    "Ship with: npm run build:ios (pinned, checksummed, store-edition.lock).\n"
+  );
+
+  console.log(
+    "\nprep-dist: dist/ now holds an UNPINNED dev iOS education-edition bundle.\n" +
+    "  source: " + tgz + "\n" +
+    "  ⚠️ dev only, appId app.clucknorris.edu.dev — never publish this.\n"
+  );
+  process.exit(0);
+}
+
+console.error('prep-dist: usage — node scripts/prep-dist.mjs <solana|store|seeker-dev|play-dev|ios-dev>');
 process.exit(1);

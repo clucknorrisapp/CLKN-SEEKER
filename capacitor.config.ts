@@ -65,6 +65,18 @@ const targets: Record<string, CapacitorConfig> = {
     backgroundColor: '#0b0c0e',
     ios: { appendUserAgent: 'ClucknorrisIOS' },
   },
+  // ── iOS education-edition DEV build (prep-dist.mjs `ios-dev`) — unpinned, local, look-at-develop
+  // ONLY. Twin of `googlePlay`'s app.clucknorris.edu.dev debug id: its own appId + name so it
+  // installs beside the real store app on the same device instead of overwriting it, and no
+  // server.url so it runs the bundled dev tarball dist/ was just filled with. No wallet plugin,
+  // same as `ios` above — the education edition never carries one.
+  'ios-dev': {
+    appName: 'Cluck Norris (dev)',
+    webDir: 'dist',
+    appId: 'app.clucknorris.edu.dev',
+    backgroundColor: '#0b0c0e',
+    ios: { appendUserAgent: 'ClucknorrisIOSDev' },
+  },
 };
 
 const config: CapacitorConfig = targets[TARGET] || targets.solana;

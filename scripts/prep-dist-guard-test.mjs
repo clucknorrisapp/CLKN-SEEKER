@@ -339,6 +339,59 @@ await runDev({ ...PLAY,
   console.log(`  ${onlyKnownProducts ? "✓" : "✗"} Package.swift targets only the Capacitor/Cordova products (found: ${JSON.stringify(productNames)})`);
 }
 
+// ── ios-dev: the iOS twin of play-dev — the same unpinned path, so the owner can look at
+// `develop` in Xcode without a release tag. Same four-leg safety argument, asserted the same way,
+// plus the education rules running under the "ios" label (matching what CLKN_TARGET=ios uses on
+// the pinned path, not "google").
+const IOS_DEV = { mode: "ios-dev", target: "ios", tgzEnv: "CLKN_IOS_DEV_TGZ" };
+
+await runDev({ ...IOS_DEV,
+  name: "ios-dev: REFUSED without CLKN_IOS_DEV=1 (cannot be entered by accident)",
+  env: { CLKN_IOS_DEV: "" }, mutate: dropWallet,
+  expect: "fail",
+});
+await runDev({ ...IOS_DEV,
+  name: "ios-dev: REFUSED when the local bundle does not exist",
+  env: { CLKN_IOS_DEV: "1", CLKN_IOS_DEV_TGZ: join(work, "nope.tgz") }, mutate: dropWallet,
+  expect: "fail",
+});
+await runDev({ ...IOS_DEV,
+  name: "ios-dev: REFUSED when the tarball has no index.html at root (wrong artifact shape)",
+  env: { CLKN_IOS_DEV: "1" },
+  mutate: (d) => { dropWallet(d); rmSync(join(d, "index.html"), { force: true }); },
+  expect: "fail",
+});
+await runDev({ ...IOS_DEV,
+  name: "ios-dev: ⚠️ runs the EDUCATION rules — a bundle carrying the wallet file (mint, signing, swap link) is refused",
+  env: { CLKN_IOS_DEV: "1" },
+  expect: "fail",
+});
+await runDev({ ...IOS_DEV,
+  name: "ios-dev: an education-clean bundle builds and is STAMPED do-not-publish",
+  env: { CLKN_IOS_DEV: "1" }, mutate: dropWallet,
+  expect: "pass", wantMarker: true,
+});
+
+// Structural: build:ios-dev must never be able to reach build:ios's PINNED path, and build:ios
+// must never be able to reach ios-dev — the same guarantee checked for seeker/play above, applied
+// to the new mode.
+{
+  const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
+  const ios = String(pkg.scripts["build:ios"] || "");
+  const iosDev = String(pkg.scripts["build:ios-dev"] || "");
+  const iosNeverDev = ios.includes("prep:store") && !ios.includes("ios-dev") && !ios.includes("play-dev") && !ios.includes("seeker-dev");
+  const devNeverPinned = iosDev.includes("prep:ios-dev") && !iosDev.includes("prep:store") && iosDev.includes("CLKN_IOS_DEV=1");
+  // The dev script doesn't hardcode the appId itself (capacitor.config.ts does, keyed off
+  // CLKN_TARGET=ios-dev) — what matters here is that it sets that target and the explicit opt-in.
+  const devUsesIosDevTarget = iosDev.includes("CLKN_TARGET=ios-dev");
+  if (!iosNeverDev) failures++;
+  console.log(`  ${iosNeverDev ? "✓" : "✗"} build:ios calls prep:store and never ios-dev / play-dev / seeker-dev`);
+  if (!devNeverPinned) failures++;
+  console.log(`  ${devNeverPinned ? "✓" : "✗"} build:ios-dev calls prep:ios-dev, never prep:store, and requires CLKN_IOS_DEV=1`);
+  if (!devUsesIosDevTarget) failures++;
+  console.log(`  ${devUsesIosDevTarget ? "✓" : "✗"} build:ios-dev sets CLKN_TARGET=ios-dev (its own appId, via capacitor.config.ts)`);
+}
+
 rmSync(join(ROOT, "dist"), { recursive: true, force: true });
 
 server.close();
