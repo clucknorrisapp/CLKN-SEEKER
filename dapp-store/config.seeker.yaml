@@ -5,8 +5,11 @@
 # Written 2026-09-22. This is a NEW listing beside the live one (config.yaml), on its own
 # package id, so publishing it cannot disturb the app that is already approved. It describes the
 # app as built on the platform repo's `develop` (PR #387 and after); anything not shipped by
-# submission day must come out of this text before it is used. Screenshots are still to be
-# captured from the real build. Validate against the dapp-store CLI before submitting.
+# submission day must come out of this text before it is used. Screenshots captured 2026-09-24
+# from a real build of the Seeker edition (platform repo: `node scripts/build-store-edition.mjs
+# seeker`), served statically at 1080x2400 (device pixels) and driven with Playwright against
+# clucknorris.app's live, read-only APIs — no wallet, no signing, no mocked data. Validate
+# against the dapp-store CLI before submitting.
 #
 # ⛔ Not a hackathon requirement: dApp Store publishing is only required of WINNERS, within 30
 # days of the announcement. Keep this ready; do not publish it before the owner says so.
@@ -95,9 +98,21 @@ release:
       uri: ./icon.png
     - purpose: banner
       uri: ./banner.png
-    # ⚠️ TO CAPTURE from the real Seeker build, 390×844 or the device's own size, in this order:
-    # 01 Rent Reclaim with a real result · 02 the tools grid · 03 the school home · 04 a lesson ·
-    # 05 the pass sheet showing the live terms · 06 Firepit · 07 the Locker Room. None exist yet.
+    # Captured 2026-09-24, real build, in flagship order (AGENTS.md: "the school leads"):
+    - purpose: screenshot
+      uri: ./screenshots-seeker/01-home.png          # school home: progress, continue card, course list
+    - purpose: screenshot
+      uri: ./screenshots-seeker/02-school-course.png # The Incubator: a course's lesson list
+    - purpose: screenshot
+      uri: ./screenshots-seeker/03-lesson.png        # "What is a Wallet?" open, real lesson body
+    - purpose: screenshot
+      uri: ./screenshots-seeker/04-ask-cluck.png     # Ask Cluck: a typed question, a real AI answer
+    - purpose: screenshot
+      uri: ./screenshots-seeker/05-wallet-checkup.png # Wallet Checkup on the treasury address, real scan result
+    - purpose: screenshot
+      uri: ./screenshots-seeker/06-tools.png         # the Toolkit grid: Firepit, Locker Room, Project Burn and more
+    - purpose: screenshot
+      uri: ./screenshots-seeker/07-rent-reclaim.png  # Rent Reclaim, no-wallet preview state
   files:
     # The release APK built by `npm run build:seeker` from the pinned release (docs/SEEKER_TARGET.md).
     - purpose: install
