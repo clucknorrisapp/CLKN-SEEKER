@@ -4,15 +4,53 @@ How to ship the pinned `ios` store-edition bundle (`store-edition.lock`) to Test
 to do the first time it fails on signing. Companion to `docs/IOS_XCODE.md` (the Mac/Xcode
 handoff) — this document is CI-side and needs no Mac.
 
-## Signing — the `.p12` Apple Distribution identity is the SUPPORTED path
+## Signing — MANUAL signing, `.p12` identity + a `sigh`-fetched profile
 
-This workflow signs with a **pre-issued `.p12` Apple Distribution identity**, imported into a
-throwaway CI keychain on every run. That is not a fallback — it is the only path this workflow
-takes, and the archive step fails fast (before touching Xcode) if the two secrets below aren't
-both set.
+This workflow signs with **manual signing** (`CODE_SIGN_STYLE=Manual`): a **pre-issued `.p12`
+Apple Distribution identity**, imported into a throwaway CI keychain on every run, paired with an
+**App Store provisioning profile fetched through fastlane's `sigh`**, authenticated with the App
+Manager API key. That is not a fallback — it is the only path this workflow takes, and the
+archive step fails fast (before touching Xcode) if the two `.p12` secrets below aren't both set.
 
 - `IOS_DIST_P12_BASE64` — a pre-issued Apple Distribution identity, base64-encoded `.p12`
 - `IOS_DIST_P12_PASSWORD` — that `.p12`'s export password
+
+### Why manual signing, not automatic
+
+Run 2 of this workflow
+(https://github.com/clucknorrisapp/CLKN-SEEKER/actions/runs/36016225616) got all the way through
+API-key parsing, `.p12` import ("1 identity imported"), Xcode/SDK selection and package
+resolution, then failed at the archive step with:
+
+> App has conflicting provisioning settings. App is automatically signed for development, but a
+> conflicting code signing identity Apple Distribution has been manually specified. Set the code
+> signing identity value to "Apple Development" in the build settings editor, or switch to manual
+> signing.
+
+That's automatic signing's own logic working as designed, not a fluke: `CODE_SIGN_STYLE=Automatic`
+tells Xcode to pick its own identity and auto-manage a matching profile, and forcing
+`CODE_SIGN_IDENTITY=Apple Distribution` on top of that is a direct contradiction — automatic
+signing expects a development identity for a development-style automatic flow. This runner's
+keychain holds only the imported Distribution identity from the `.p12` (by design: the App
+Manager API key cannot mint a certificate of any kind, so there is no development identity for
+automatic signing to fall back to either). The only way to use a Distribution identity here is to
+tell Xcode exactly which identity and which profile to use — `CODE_SIGN_STYLE=Manual`,
+`CODE_SIGN_IDENTITY=Apple Distribution`, `PROVISIONING_PROFILE_SPECIFIER=<profile name>` — and
+supply that profile ourselves rather than asking `-allowProvisioningUpdates` (which only ever
+pairs with automatic signing) to manage it.
+
+The profile itself still comes from App Store Connect through the App Manager key — App Manager
+**can** create and download an App Store provisioning profile, it just can't mint a certificate.
+The workflow fetches it with **fastlane's `sigh`** (`fastlane sigh --api_key_path … --app_identifier
+app.clucknorris.edu --team_id 6WAQ6L3CN3 --output_path … --filename AppStore.mobileprovision`),
+reads the profile's `Name` and `UUID` back out with `security cms -D` + `plutil -extract` (fastlane
+sets `SIGH_NAME`/`SIGH_UUID` as *lane* variables inside a `Fastfile`, which this workflow doesn't
+use — it calls `sigh` directly as a shell command, so the name/UUID are parsed from the downloaded
+`.mobileprovision` itself and exported to `$GITHUB_ENV` for the archive/export steps), and passes
+that name as `PROVISIONING_PROFILE_SPECIFIER`. `ExportOptions.plist` is built the same way —
+`signingStyle: manual`, `signingCertificate: Apple Distribution`, `provisioningProfiles: {
+"app.clucknorris.edu": "<profile name>" }` — so the export/re-sign step doesn't fall back to
+automatic either.
 
 ### Why not cloud (managed) signing?
 
@@ -25,11 +63,11 @@ Admin on an App Store Connect API key can invite/remove users, manage other peop
 change the team's agreements — well beyond what a CI signing step needs. App Manager is the
 correct, narrower grant for what this workflow actually does: build and upload app binaries.
 
-App Manager **can** still do two of the three things `-allowProvisioningUpdates` is used for
-here, so the flag stays on the archive and export calls:
-
-- create/renew the **App Store provisioning profile** that pairs with an *existing* certificate
-- register app IDs / capabilities if the project ever needs a new one
+App Manager **can** still do the thing this workflow needs from it, just not through
+`-allowProvisioningUpdates` (that flag only pairs with automatic signing, and automatic signing is
+what run 2 proved doesn't work on this runner — see above): the `fastlane sigh` step fetches/creates
+the **App Store provisioning profile** that pairs with the already-imported `.p12` certificate,
+authenticated with the same App Manager key.
 
 What App Manager **cannot** do is mint a brand-new **distribution certificate** from nothing —
 that's the Admin-only step, and it's the one this workflow deliberately avoids needing by using a
@@ -37,7 +75,10 @@ certificate someone already created on a Mac (see below) instead of asking CI to
 
 **Team ID** (not a secret, it's public metadata): `6WAQ6L3CN3` — already written into
 `ios/App/App.xcodeproj/project.pbxproj` (`DEVELOPMENT_TEAM`, `CODE_SIGN_STYLE = Automatic`) and
-into the workflow's `TEAM_ID` env and `ExportOptions.plist`.
+into the workflow's `TEAM_ID` env and `ExportOptions.plist`. **`CODE_SIGN_STYLE = Automatic` in
+the project file is intentional and left alone** — the owner's local Xcode should keep automatic
+signing for day-to-day use; the workflow overrides it to `Manual` on the `xcodebuild` command line
+only, which wins over the project setting for that one invocation.
 
 ## The secrets
 
@@ -98,10 +139,11 @@ Inputs, all optional:
   `true` for a specific run when ready to actually publish to TestFlight — an upload only ever
   happens on that explicit per-run choice, never by default.
 
-⚠️ **Even a `submit=false` run is not a fully offline dry run.** The archive and export steps both
-pass `-allowProvisioningUpdates`, which authenticates to App Store Connect with the ASC API key
-and can create or renew the App Store provisioning profile on the team account regardless of
-`submit`. Only the final "upload the binary" action is gated by `submit`.
+⚠️ **Even a `submit=false` run is not a fully offline dry run.** The `fastlane sigh` step (before
+archiving) authenticates to App Store Connect with the ASC API key and can create or renew the App
+Store provisioning profile on the team account regardless of `submit`; the export step still
+carries `-allowProvisioningUpdates` for the upload path. Only the final "upload the binary" action
+is gated by `submit`.
 
 ## A first-run failure on "no signing certificate" / provisioning
 
@@ -117,10 +159,31 @@ Distribution' found"* even though both `.p12` secrets are set, check:
   Xcode 15+'s unified "Apple Distribution" type is what `CODE_SIGN_IDENTITY="Apple Distribution"`
   in the workflow expects)
 - the ASC API key's role in App Store Connect → Users and Access → Integrations is still at least
-  **App Manager**, needed for the provisioning-profile side of `-allowProvisioningUpdates`
+  **App Manager**, needed for `fastlane sigh` to fetch/create the App Store provisioning profile
 
-Do not respond to this by requesting an Admin-role API key — see "Why not cloud (managed)
-signing?" above for why that's off the table. The fix is always on the `.p12` / App Manager side.
+If the `fastlane sigh` step itself fails with a certificate mismatch (the App Store profile it
+finds/creates doesn't pair with the `.p12` identity that was imported), the step prints both
+identities' SHA-1 fingerprints — from `security find-identity -v -p codesigning` on the CI
+keychain, and from the downloaded profile's own `DeveloperCertificates` via `openssl x509
+-fingerprint`. Compare them; a mismatch means either the wrong `.p12` was exported, or App Store
+Connect has more than one Apple Distribution certificate on the team and the profile is pinned to
+a different one than the `.p12`.
+
+Do not respond to either failure by requesting an Admin-role API key — see "Why not cloud
+(managed) signing?" above for why that's off the table. The fix is always on the `.p12` / App
+Manager side.
+
+⚠️ **Uncertainty about `sigh`'s exact CLI surface.** No container running this workflow's author
+has `fastlane` installed, so `fastlane sigh --help` was never run here — the flags used
+(`--api_key_path`, `--app_identifier`, `--team_id`, `--output_path`, `--filename`,
+`--skip_certificate_verification`) are fastlane's long-documented, stable names for `sigh`, and
+the workflow calls `sigh` directly as a one-off shell command rather than through a `Fastfile`
+lane, so the `SIGH_PROFILE_PATH` / `SIGH_UUID` / `SIGH_NAME` environment variables `sigh` is
+documented to set on completion are **not** relied on — the profile's `Name` and `UUID` are read
+back out of the downloaded `.mobileprovision` with `security cms -D` + `plutil -extract` instead,
+which does not depend on fastlane's lane-context behavior at all. If a real run shows `sigh`
+rejects one of these flags on the runner's installed fastlane version, that is the first thing to
+adjust — the fallback of parsing the profile file directly should still hold.
 
 ## What a green run means, and what it doesn't
 
@@ -145,12 +208,14 @@ log on the run in question first.
 
 ## What this workflow cannot verify
 
-No container running this workflow's author has Xcode or an Apple Developer login, so
-`xcodebuild` itself was never run here — only `node --check`-equivalent validation (YAML
-structure, the existing `scripts/prep-dist-guard-test.mjs`) and reading the generated Xcode
-project by hand. The scheme, target name, bundle ID, versions and `DEVELOPMENT_TEAM` were all
-read directly from `ios/App/App.xcodeproj/project.pbxproj`; a shared scheme
-(`ios/App/App.xcodeproj/xcshareddata/xcschemes/App.xcscheme`) was added because none existed —
-`npx cap add ios` only ever produced Xcode's per-user, uncommitted scheme, which a fresh CI
-checkout has no access to. The first real run of this workflow is this project's first time an
+No container running this workflow's author has Xcode, `fastlane`, or an Apple Developer login, so
+neither `xcodebuild` nor `fastlane sigh` was ever run here — only `python3`/PyYAML validation of
+the workflow YAML, `git diff --check`, the existing `scripts/prep-dist-guard-test.mjs`, and reading
+the generated Xcode project by hand. The scheme, target name, bundle ID, versions and
+`DEVELOPMENT_TEAM` were all read directly from `ios/App/App.xcodeproj/project.pbxproj`; a shared
+scheme (`ios/App/App.xcodeproj/xcshareddata/xcschemes/App.xcscheme`) was added because none
+existed — `npx cap add ios` only ever produced Xcode's per-user, uncommitted scheme, which a fresh
+CI checkout has no access to. The manual-signing `sigh` fetch was written from reading fastlane's
+published `sigh` documentation, not from running it — see the "Uncertainty about `sigh`'s exact CLI
+surface" note above. The first real run of this workflow is this project's first time an
 `xcodebuild archive` of it has ever executed anywhere.

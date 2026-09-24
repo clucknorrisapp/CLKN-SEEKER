@@ -15,11 +15,26 @@
 # (`-allowProvisioningUpdates` minting a NEW distribution certificate) needs an App Store Connect
 # API key with the Admin role, and the key on this repo is deliberately App Manager — the owner's
 # key stays that way; see docs/IOS_TESTFLIGHT.md for why. App Manager CAN create the App Store
-# *provisioning profile* (not a new certificate) via `-allowProvisioningUpdates`, so that flag
-# stays on the archive/export calls for that purpose only — never for minting a certificate. If
-# the two `.p12` secrets are absent, the archive step fails FAST with a message pointing at
+# *provisioning profile* (not a new certificate), but only through fastlane's `sigh` — not through
+# `-allowProvisioningUpdates`, which needs automatic signing and this runner only ever holds a
+# DISTRIBUTION identity (never a development one, by design: the API key cannot mint
+# certificates). Xcode's automatic signing refuses to pair a manually-specified Distribution
+# identity with an auto-managed profile — see "MANUAL signing, not automatic" below. If the two
+# `.p12` secrets are absent, the archive step fails FAST with a message pointing at
 # docs/IOS_TESTFLIGHT.md, rather than limping into a cloud-signing attempt that is expected to
 # fail on this account's key role.
+#
+# MANUAL signing, not automatic. Run 2 of this workflow
+# (https://github.com/clucknorrisapp/CLKN-SEEKER/actions/runs/36016225616) proved automatic
+# signing cannot work here: the archive step failed with "App has conflicting provisioning
+# settings. App is automatically signed for development, but a conflicting code signing identity
+# Apple Distribution has been manually specified." Xcode's automatic signing wants to pick its own
+# (development) identity and profile; forcing CODE_SIGN_IDENTITY=Apple Distribution while
+# CODE_SIGN_STYLE=Automatic is exactly the conflict it's complaining about — there IS no
+# development identity in the runner's keychain to fall back to anyway, only the imported `.p12`.
+# The fix is CODE_SIGN_STYLE=Manual with an explicit PROVISIONING_PROFILE_SPECIFIER, fetched via
+# fastlane's `sigh` (below) rather than `-allowProvisioningUpdates`, which only ever pairs with
+# automatic signing.
 #
 # RUNNER. macos-15 — at the time this was written it is the newest macOS label GitHub documents
 # for hosted runners (macos-26 / a later "-latest" alias may exist by the time this runs; if
@@ -35,9 +50,10 @@
 #   ❌ it does NOT mean Apple has finished processing the build, or that TestFlight review has
 #      passed — that is Apple's own pipeline, 10-30 minutes after a successful upload, and no CI
 #      step here can see the outcome of it.
-#   ⚠️ even submit=false still talks to Apple: `-allowProvisioningUpdates` on the archive/export
-#      steps can create or renew the App Store provisioning profile on the team account. It is
-#      not a fully offline dry run.
+#   ⚠️ even submit=false still talks to Apple: the `fastlane sigh` step (before archiving) can
+#      create or renew the App Store provisioning profile on the team account regardless of
+#      `submit`, and the export step still carries `-allowProvisioningUpdates` for the upload path.
+#      It is not a fully offline dry run.
 
 name: iOS TestFlight
 
@@ -242,17 +258,85 @@ jobs:
           security list-keychains -d user -s "$RUNNER_TEMP/$KEYCHAIN" $(security list-keychains -d user | sed 's/"//g')
           rm -f "$P12_PATH"
 
-      # ARCHIVE — signs with the imported Apple Distribution identity (CODE_SIGN_IDENTITY, via
-      # CODE_SIGN_STYLE=Automatic so Xcode matches it against the identity in the keychain).
-      # -allowProvisioningUpdates is kept ONLY so the App Manager key can create/renew the App
-      # Store *provisioning profile* to pair with that identity — it is not asked to mint a new
-      # certificate, which is the one thing this account's key role cannot do.
-      # -allowProvisioningDeviceRegistration is REMOVED: an App Store distribution archive never
-      # needs to register a device, and the flag has no purpose here.
-      - name: archive (xcodebuild, signed with the imported Apple Distribution identity)
+      # Fetch the App Store provisioning profile with fastlane's `sigh`, authenticated with the
+      # App Manager API key (App Manager CAN create/download an App Store profile — it just can't
+      # mint a certificate, which is why this pairs with the already-imported `.p12` rather than
+      # asking Xcode's automatic signing to manage both). fastlane ships preinstalled on GitHub's
+      # macOS runners; `which fastlane` here turns a missing-tool failure into a clear message
+      # instead of an opaque command-not-found deep in the archive step.
+      #
+      # The key JSON goes to $RUNNER_TEMP (not the repo, not $HOME), mode 600, deleted in the
+      # always() cleanup below — never interpolated into the script body, only passed via env and
+      # written by `node -e` so the .p8 contents (with literal newlines) never touch a shell word.
+      - name: fetch App Store provisioning profile (fastlane sigh)
         env:
           ASC_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_API_ISSUER_ID }}
+          ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
+        run: |
+          set -euo pipefail
+          if ! command -v fastlane >/dev/null 2>&1; then
+            echo "fastlane not found on this runner image — it is expected preinstalled on" >&2
+            echo "GitHub-hosted macOS runners. See the 'Signing' section of docs/IOS_TESTFLIGHT.md." >&2
+            exit 1
+          fi
+          fastlane --version
+
+          ASC_KEY_JSON="$RUNNER_TEMP/asc_key.json"
+          node -e '
+            const fs = require("fs");
+            const out = {
+              key_id: process.env.ASC_KEY_ID,
+              issuer_id: process.env.ASC_ISSUER_ID,
+              key: process.env.ASC_API_KEY_P8,
+              in_house: false,
+            };
+            fs.writeFileSync(process.env.ASC_KEY_JSON, JSON.stringify(out));
+          ' ASC_KEY_JSON="$ASC_KEY_JSON"
+          chmod 600 "$ASC_KEY_JSON"
+          echo "ASC_KEY_JSON=$ASC_KEY_JSON" >> "$GITHUB_ENV"
+
+          PROFILE_DIR="$RUNNER_TEMP/profiles"
+          mkdir -p "$PROFILE_DIR"
+          if ! fastlane sigh \
+            --api_key_path "$ASC_KEY_JSON" \
+            --app_identifier app.clucknorris.edu \
+            --team_id "$TEAM_ID" \
+            --output_path "$PROFILE_DIR" \
+            --filename AppStore.mobileprovision \
+            --skip_certificate_verification false; then
+            echo "sigh failed to fetch/create the App Store provisioning profile." >&2
+            echo "If this is a certificate mismatch (the profile's certificate does not match the" >&2
+            echo "imported .p12 identity), compare these fingerprints:" >&2
+            echo "--- identity in the CI keychain ---" >&2
+            security find-identity -v -p codesigning "$KEYCHAIN_PATH" || true
+            echo "--- most recently downloaded App Store profile's certificate(s), if any ---" >&2
+            if [ -f "$PROFILE_DIR/AppStore.mobileprovision" ]; then
+              security cms -D -i "$PROFILE_DIR/AppStore.mobileprovision" 2>/dev/null \
+                | plutil -extract DeveloperCertificates.0 raw -o - - 2>/dev/null \
+                | base64 --decode \
+                | openssl x509 -inform DER -noout -fingerprint -sha1 || true
+            fi
+            echo "See the 'Signing' section of docs/IOS_TESTFLIGHT.md." >&2
+            exit 1
+          fi
+
+          PROFILE_PATH="$PROFILE_DIR/AppStore.mobileprovision"
+          echo "SIGH_PROFILE_PATH=$PROFILE_PATH" >> "$GITHUB_ENV"
+          SIGH_NAME=$(security cms -D -i "$PROFILE_PATH" | plutil -extract Name raw -o - -)
+          SIGH_UUID=$(security cms -D -i "$PROFILE_PATH" | plutil -extract UUID raw -o - -)
+          echo "SIGH_NAME=$SIGH_NAME" >> "$GITHUB_ENV"
+          echo "SIGH_UUID=$SIGH_UUID" >> "$GITHUB_ENV"
+          echo "fetched provisioning profile: $SIGH_NAME ($SIGH_UUID)"
+
+      # ARCHIVE — MANUAL signing. The runner's keychain holds only the imported Apple Distribution
+      # identity (never a development one — the App Manager key can't mint certificates), and
+      # automatic signing refuses to pair a manually-specified Distribution identity with an
+      # auto-managed profile (run 2's "conflicting provisioning settings" failure — see the file
+      # header). CODE_SIGN_STYLE=Manual with the profile `sigh` just fetched avoids that path
+      # entirely: no -allowProvisioningUpdates, no -authenticationKey* flags here, since manual
+      # signing does nothing with them.
+      - name: archive (xcodebuild, manual signing with the imported Apple Distribution identity)
         run: |
           set -euo pipefail
           mkdir -p build
@@ -263,13 +347,10 @@ jobs:
             -destination 'generic/platform=iOS' \
             -archivePath "$ARCHIVE_PATH" \
             archive \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath ~/private_keys/AuthKey_${ASC_KEY_ID}.p8 \
-            -authenticationKeyID "$ASC_KEY_ID" \
-            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            CODE_SIGN_STYLE=Manual \
             DEVELOPMENT_TEAM="$TEAM_ID" \
-            CODE_SIGN_STYLE=Automatic \
             CODE_SIGN_IDENTITY="Apple Distribution" \
+            PROVISIONING_PROFILE_SPECIFIER="$SIGH_NAME" \
             MARKETING_VERSION="${{ steps.resolve.outputs.version }}" \
             CURRENT_PROJECT_VERSION="${{ steps.resolve.outputs.build }}" \
             2>&1 | tee build/archive.log
@@ -302,7 +383,14 @@ jobs:
             <key>teamID</key>
             <string>${TEAM_ID}</string>
             <key>signingStyle</key>
-            <string>automatic</string>
+            <string>manual</string>
+            <key>signingCertificate</key>
+            <string>Apple Distribution</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>app.clucknorris.edu</key>
+              <string>${SIGH_NAME}</string>
+            </dict>
             <key>uploadSymbols</key>
             <true/>
             <key>destination</key>
@@ -312,9 +400,11 @@ jobs:
           PLIST
           echo "destination=$DESTINATION" >> "$GITHUB_ENV"
 
-      # EXPORT (+ upload, when destination=upload). Same authentication flags as the archive step
-      # (for the provisioning-profile side of -allowProvisioningUpdates) — the export/upload call
-      # authenticates independently.
+      # EXPORT (+ upload, when destination=upload). Signing itself is manual (ExportOptions.plist
+      # above names the exact profile `sigh` fetched); the -authenticationKey* flags and
+      # -allowProvisioningUpdates stay here ONLY because destination=upload (submit=true) uses
+      # this same call to authenticate the upload to App Store Connect — manual signing does not
+      # consume them for the export/re-sign step itself.
       - name: export (and upload, if submit=true)
         env:
           ASC_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
@@ -356,13 +446,21 @@ jobs:
           if-no-files-found: ignore
           retention-days: 30
 
-      # Always runs, success or failure: never leave a signing identity behind on the runner.
-      - name: delete the temporary signing keychain
+      # Always runs, success or failure: never leave a signing identity, API key JSON, or fetched
+      # provisioning profile behind on the runner.
+      - name: delete the temporary signing keychain and fetched credentials
         if: always()
         run: |
           if [ -n "${KEYCHAIN_PATH:-}" ]; then
             security delete-keychain "$KEYCHAIN_PATH" || true
             security list-keychains -d user -s $(security list-keychains -d user | sed 's/"//g' | grep -v "$(basename "$KEYCHAIN_PATH")") || true
+          fi
+          rm -f "${ASC_KEY_JSON:-}"
+          if [ -n "${SIGH_PROFILE_PATH:-}" ]; then
+            rm -f "$SIGH_PROFILE_PATH"
+            if [ -n "${SIGH_UUID:-}" ]; then
+              rm -f "$HOME/Library/MobileDevice/Provisioning Profiles/${SIGH_UUID}.mobileprovision"
+            fi
           fi
 
       - name: summary
