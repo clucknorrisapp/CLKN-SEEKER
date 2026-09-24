@@ -283,7 +283,7 @@ jobs:
           fastlane --version
 
           ASC_KEY_JSON="$RUNNER_TEMP/asc_key.json"
-          node -e '
+          ASC_KEY_JSON="$ASC_KEY_JSON" node -e '
             const fs = require("fs");
             const out = {
               key_id: process.env.ASC_KEY_ID,
@@ -292,7 +292,7 @@ jobs:
               in_house: false,
             };
             fs.writeFileSync(process.env.ASC_KEY_JSON, JSON.stringify(out));
-          ' ASC_KEY_JSON="$ASC_KEY_JSON"
+          '
           chmod 600 "$ASC_KEY_JSON"
           echo "ASC_KEY_JSON=$ASC_KEY_JSON" >> "$GITHUB_ENV"
 
