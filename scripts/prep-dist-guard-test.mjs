@@ -309,6 +309,36 @@ await runDev({ ...PLAY,
   console.log(`  ${devDebug ? "✓" : "✗"} build:seeker-dev is debug-only, under its own applicationId`);
 }
 
+// Structural: build:ios must be the PINNED store-edition path (prep:store, same as build:play)
+// and never route through a dev/unpinned mode — same reasoning as the build:seeker check above,
+// applied to the iOS TestFlight workflow's own build step.
+{
+  const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
+  const ios = String(pkg.scripts["build:ios"] || "");
+  const iosClean = ios.includes("prep:store") && !ios.includes("play-dev") && !ios.includes("seeker-dev");
+  if (!iosClean) failures++;
+  console.log(`  ${iosClean ? "✓" : "✗"} build:ios calls prep:store and never play-dev / seeker-dev`);
+}
+
+// Structural: the generated Capacitor Swift package must declare no dependency beyond
+// Capacitor/Cordova itself — a wallet/MWA plugin sneaking into CapApp-SPM would put wallet code
+// into the education-only iOS bundle the same way the Android clknWallet checks above guard
+// against it on that platform. `npx cap add ios`/`cap sync` regenerate this file, so this is
+// re-checked every run rather than trusted to stay untouched.
+{
+  const swiftPath = join(ROOT, "ios", "App", "CapApp-SPM", "Package.swift");
+  const swift = readFileSync(swiftPath, "utf8");
+  const packageUrls = [...swift.matchAll(/\.package\(url:\s*"([^"]+)"/g)].map((m) => m[1]);
+  const onlyCapacitor = packageUrls.length > 0 && packageUrls.every((u) => /ionic-team\/capacitor-swift-pm/.test(u));
+  if (!onlyCapacitor) failures++;
+  console.log(`  ${onlyCapacitor ? "✓" : "✗"} Package.swift declares no dependency beyond Capacitor/Cordova (found: ${JSON.stringify(packageUrls)})`);
+
+  const productNames = [...swift.matchAll(/\.product\(name:\s*"([^"]+)"/g)].map((m) => m[1]);
+  const onlyKnownProducts = productNames.length > 0 && productNames.every((n) => n === "Capacitor" || n === "Cordova");
+  if (!onlyKnownProducts) failures++;
+  console.log(`  ${onlyKnownProducts ? "✓" : "✗"} Package.swift targets only the Capacitor/Cordova products (found: ${JSON.stringify(productNames)})`);
+}
+
 rmSync(join(ROOT, "dist"), { recursive: true, force: true });
 
 server.close();

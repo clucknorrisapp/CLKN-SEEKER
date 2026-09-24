@@ -1,36 +1,33 @@
-# Ship an iOS build to TestFlight — cloud-signed with the App Store Connect API key.
+# Ship an iOS build to TestFlight — signed with a `.p12` Apple Distribution identity.
 #
-# Written 2026-09-24. Companion to android-build.yml, same house rule: nothing here weakens the
-# store-edition pin. `npm run build:ios` calls `prep:store`, which downloads and verifies the
-# PINNED, CHECKSUMMED ios release from store-edition.lock (scripts/prep-dist.mjs) — this workflow
-# never bypasses that, and never should.
+# Written 2026-09-24, revised in the same PR's fix round. Companion to android-build.yml, same
+# house rule: nothing here weakens the store-edition pin. `npm run build:ios` calls `prep:store`,
+# which downloads and verifies the PINNED, CHECKSUMMED ios release from store-edition.lock
+# (scripts/prep-dist.mjs) — this workflow never bypasses that, and never should.
 #
 # Manual trigger only (workflow_dispatch). There is no push trigger: an iOS archive + upload
 # costs real minutes on a macOS runner and touches App Store Connect, so it runs on request, not
 # on every push the way android-build.yml's compile check does.
 #
-# SIGNING. Preferred and default: CLOUD (managed) signing via the App Store Connect API key —
-# `-allowProvisioningUpdates` lets xcodebuild mint/renew the distribution certificate and
-# provisioning profile itself, authenticated with the same key used to upload. Three repository
-# secrets already exist for this (Account Holder, 2026-09-24): ASC_API_KEY_P8, ASC_API_KEY_ID,
-# ASC_API_ISSUER_ID. No certificate secret exists yet — this is expected on a first run; see the
-# OPTIONAL fallback below and docs/IOS_TESTFLIGHT.md for what a "no signing certificate" failure
-# means and how the owner produces one.
-#
-# OPTIONAL fallback — a pre-issued .p12 distribution identity. If (and only if) the repo secrets
-# IOS_DIST_P12_BASE64 and IOS_DIST_P12_PASSWORD are BOTH set, this workflow imports that identity
-# into a temporary CI keychain before archiving, so xcodebuild can sign even if cloud
-# (-allowProvisioningUpdates) signing fails for some account-permission reason. `if:` conditions
-# cannot read `secrets.*` directly, so a prior step computes HAVE_P12 into $GITHUB_ENV from
-# whether the secret STRING is non-empty, and every p12 step gates on that computed value. The
-# temporary keychain is deleted in an `always()` step so a failed run never leaves a signing
-# identity sitting on the runner (moot on GitHub-hosted macOS runners, which are ephemeral, but
-# cheap insurance and the right habit if this ever runs self-hosted).
+# SIGNING. PRIMARY and REQUIRED path: a pre-issued `.p12` Apple Distribution identity, imported
+# into a throwaway CI keychain before archiving — repository secrets IOS_DIST_P12_BASE64 and
+# IOS_DIST_P12_PASSWORD. This is required, not optional: cloud-managed distribution signing
+# (`-allowProvisioningUpdates` minting a NEW distribution certificate) needs an App Store Connect
+# API key with the Admin role, and the key on this repo is deliberately App Manager — the owner's
+# key stays that way; see docs/IOS_TESTFLIGHT.md for why. App Manager CAN create the App Store
+# *provisioning profile* (not a new certificate) via `-allowProvisioningUpdates`, so that flag
+# stays on the archive/export calls for that purpose only — never for minting a certificate. If
+# the two `.p12` secrets are absent, the archive step fails FAST with a message pointing at
+# docs/IOS_TESTFLIGHT.md, rather than limping into a cloud-signing attempt that is expected to
+# fail on this account's key role.
 #
 # RUNNER. macos-15 — at the time this was written it is the newest macOS label GitHub documents
 # for hosted runners (macos-26 / a later "-latest" alias may exist by the time this runs; if
 # `macos-15` is ever retired, GitHub's own deprecation notice on the Actions run is the signal to
-# bump this literal, not a guess).
+# bump this literal, not a guess). A step near the top selects the newest installed Xcode
+# explicitly and logs its version + iOS SDK — Apple can reject an already-uploaded build after
+# processing (ITMS-90725, "unsupported Xcode/SDK") days later, and the runner log is the only
+# record of what actually built it once that happens.
 #
 # What a green run here does and does not mean:
 #   ✅ the app archives, exports/signs for App Store distribution, and (when submit=true)
@@ -38,6 +35,10 @@
 #   ❌ it does NOT mean Apple has finished processing the build, or that TestFlight review has
 #      passed — that is Apple's own pipeline, 10-30 minutes after a successful upload, and no CI
 #      step here can see the outcome of it.
+#   ⚠️ even submit=false still talks to Apple: `-allowProvisioningUpdates` on the archive/export
+#      steps can create or renew the App Store provisioning profile on the team account. It is
+#      not a fully offline dry run.
+
 name: iOS TestFlight
 
 on:
@@ -51,14 +52,19 @@ on:
         required: false
         default: ""
       build_number:
-        description: "CURRENT_PROJECT_VERSION (build number). Leave blank to use this run's number (github.run_number)."
+        description: >-
+          CURRENT_PROJECT_VERSION (build number). Leave blank to use
+          "<run number><run attempt>" (e.g. run 42, first attempt -> 421). Re-running a FAILED
+          upload reuses the same run number, and TestFlight requires each build number to be
+          strictly higher than the last — the attempt digit is what keeps a re-run from colliding
+          with the failed one. If you supply your own value here on a re-run, bump it yourself.
         required: false
         default: ""
       submit:
         description: "Upload to App Store Connect / TestFlight. false = archive + export only, .ipa is an artifact."
         required: false
         type: boolean
-        default: true
+        default: false
 
 jobs:
   testflight:
@@ -88,24 +94,58 @@ jobs:
       - name: bundle guard test
         run: node scripts/prep-dist-guard-test.mjs
 
+      # Explicit Xcode selection. macos-15 images ship more than one Xcode version side by side;
+      # relying on whatever `xcode-select` happens to default to means a build can silently sign
+      # with an SDK Apple later rejects post-upload (ITMS-90725) with no trace of which one it
+      # was. Pick the highest-versioned /Applications/Xcode*.app and log both the Xcode and SDK
+      # version so that trace exists.
+      - name: select Xcode and log its version
+        run: |
+          set -euo pipefail
+          XCODE_APP=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -n1)
+          if [ -z "$XCODE_APP" ]; then
+            echo "no /Applications/Xcode*.app found on this runner image" >&2
+            exit 1
+          fi
+          echo "selecting: $XCODE_APP"
+          sudo xcode-select -s "$XCODE_APP/Contents/Developer"
+          xcodebuild -version
+          echo "--- iOS SDKs available ---"
+          xcodebuild -showsdks | grep iphoneos
+
       # Resolve the effective version/build BEFORE anything touches Xcode. workflow_dispatch
       # input `default:` cannot hold an expression (no ${{ }} evaluation there), so "default to
       # the lock's pin" / "default to the run number" both have to be resolved here, not in the
-      # trigger block above.
+      # trigger block above. Inputs are passed via env (never interpolated into the script body)
+      # and validated — a workflow_dispatch input is operator-controlled but still untrusted
+      # enough that it should never reach a shell unchecked.
       - name: resolve version and build number
         id: resolve
+        env:
+          IN_VERSION: ${{ inputs.version }}
+          IN_BUILD: ${{ inputs.build_number }}
         run: |
           set -euo pipefail
-          VERSION="${{ inputs.version }}"
+          VERSION="$IN_VERSION"
           if [ -z "$VERSION" ]; then
-            VERSION=$(node -p "require('./store-edition.lock').ios.version")
+            VERSION=$(node -p "JSON.parse(require('fs').readFileSync('store-edition.lock','utf8')).ios.version")
             echo "no version input — using store-edition.lock ios pin: $VERSION"
           fi
-          BUILD="${{ inputs.build_number }}"
-          if [ -z "$BUILD" ]; then
-            BUILD="${{ github.run_number }}"
-            echo "no build_number input — using the run number: $BUILD"
+          if ! [[ "$VERSION" =~ ^[0-9]+(\.[0-9]+){0,2}$ ]]; then
+            echo "refusing malformed version '$VERSION' — expected N, N.N or N.N.N" >&2
+            exit 1
           fi
+
+          BUILD="$IN_BUILD"
+          if [ -z "$BUILD" ]; then
+            BUILD="${{ github.run_number }}${{ github.run_attempt }}"
+            echo "no build_number input — using run number + attempt: $BUILD"
+          fi
+          if ! [[ "$BUILD" =~ ^[0-9]+$ ]]; then
+            echo "refusing malformed build_number '$BUILD' — expected digits only" >&2
+            exit 1
+          fi
+
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "build=$BUILD" >> "$GITHUB_OUTPUT"
 
@@ -137,46 +177,53 @@ jobs:
           echo "confirmed: SPM-only project (CapApp-SPM), no CocoaPods, no standalone .xcworkspace — building $PROJECT_PATH directly."
 
       # Never echoed, never logged. xcodebuild / altool look for API keys under
-      # ~/private_keys/AuthKey_<ID>.p8 by convention.
+      # ~/private_keys/AuthKey_<ID>.p8 by convention. Still required: the same key authenticates
+      # the -allowProvisioningUpdates profile step and the export/upload.
       - name: write the App Store Connect API key
         env:
           ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
           ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
         run: |
           set -euo pipefail
+          if [ -z "$ASC_API_KEY_P8" ] || [ -z "$ASC_API_KEY_ID" ]; then
+            echo "ASC_API_KEY_P8 / ASC_API_KEY_ID are not both set — see docs/IOS_TESTFLIGHT.md." >&2
+            exit 1
+          fi
           mkdir -p ~/private_keys
           printf '%s' "$ASC_API_KEY_P8" > ~/private_keys/AuthKey_${ASC_API_KEY_ID}.p8
           chmod 600 ~/private_keys/AuthKey_${ASC_API_KEY_ID}.p8
 
-      # Computed here, not read directly in `if:` — `if:` conditions cannot see secrets.*, only
-      # steps/env output, so this is the one place that may touch the secret's presence.
-      - name: check for an optional pre-issued distribution identity
-        run: |
-          if [ -n "${{ secrets.IOS_DIST_P12_BASE64 }}" ] && [ -n "${{ secrets.IOS_DIST_P12_PASSWORD }}" ]; then
-            echo "HAVE_P12=true" >> "$GITHUB_ENV"
-          else
-            echo "HAVE_P12=false" >> "$GITHUB_ENV"
-            echo "no IOS_DIST_P12_BASE64 / IOS_DIST_P12_PASSWORD secret pair — relying on cloud (-allowProvisioningUpdates) signing only."
-          fi
-
-      # OPTIONAL fallback, skipped cleanly when the two p12 secrets are absent (the default,
-      # expected state on a first run per the task brief). Imports a pre-issued Apple
-      # Distribution identity into a throwaway CI keychain so xcodebuild can sign even if
-      # managed/cloud signing cannot for some account-permission reason.
-      - name: import distribution certificate (optional fallback)
-        if: ${{ env.HAVE_P12 == 'true' }}
+      # REQUIRED, not optional: the `.p12` Apple Distribution identity is the only signing path
+      # this workflow supports (see the file header for why cloud/managed signing does not fit
+      # this account's App Manager key). Fails fast with a message naming the doc rather than
+      # limping into an archive step that is expected to fail on "no signing certificate".
+      #
+      # The keychain password is generated fresh per run (never derived from a secret), masked
+      # before it ever reaches $GITHUB_ENV, and the keychain is deleted in the always() cleanup
+      # step below.
+      - name: import distribution certificate (required)
         env:
           IOS_DIST_P12_BASE64: ${{ secrets.IOS_DIST_P12_BASE64 }}
           IOS_DIST_P12_PASSWORD: ${{ secrets.IOS_DIST_P12_PASSWORD }}
         run: |
           set -euo pipefail
+          if [ -z "$IOS_DIST_P12_BASE64" ] || [ -z "$IOS_DIST_P12_PASSWORD" ]; then
+            echo "IOS_DIST_P12_BASE64 / IOS_DIST_P12_PASSWORD are not both set." >&2
+            echo "This workflow requires a pre-issued .p12 Apple Distribution identity — see the" >&2
+            echo "'Signing' section of docs/IOS_TESTFLIGHT.md for how to export and add it." >&2
+            exit 1
+          fi
+
           KEYCHAIN=ci-signing.keychain-db
-          KEYCHAIN_PASSWORD=$(uuidgen)
+          KEYCHAIN_PASSWORD=$(openssl rand -hex 24)
+          echo "::add-mask::$KEYCHAIN_PASSWORD"
           echo "KEYCHAIN_PASSWORD=$KEYCHAIN_PASSWORD" >> "$GITHUB_ENV"
           echo "KEYCHAIN_PATH=$RUNNER_TEMP/$KEYCHAIN" >> "$GITHUB_ENV"
+
           security create-keychain -p "$KEYCHAIN_PASSWORD" "$RUNNER_TEMP/$KEYCHAIN"
           security set-keychain-settings -lut 21600 "$RUNNER_TEMP/$KEYCHAIN"
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$RUNNER_TEMP/$KEYCHAIN"
+
           P12_PATH="$RUNNER_TEMP/dist.p12"
           echo "$IOS_DIST_P12_BASE64" | base64 --decode > "$P12_PATH"
           security import "$P12_PATH" -k "$RUNNER_TEMP/$KEYCHAIN" -P "$IOS_DIST_P12_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
@@ -184,12 +231,14 @@ jobs:
           security list-keychains -d user -s "$RUNNER_TEMP/$KEYCHAIN" $(security list-keychains -d user | sed 's/"//g')
           rm -f "$P12_PATH"
 
-      # ARCHIVE — cloud signing. `-allowProvisioningUpdates` (+ `-allowProvisioningDeviceRegistration`)
-      # lets xcodebuild use the ASC API key to mint/renew whatever certificate and profile the
-      # build needs; it works whether or not the optional p12 above was imported, because a
-      # matching identity in the keychain (when present) is just one more thing xcodebuild can
-      # find instead of requesting a new one.
-      - name: archive (xcodebuild, cloud-signed via App Store Connect API key)
+      # ARCHIVE — signs with the imported Apple Distribution identity (CODE_SIGN_IDENTITY, via
+      # CODE_SIGN_STYLE=Automatic so Xcode matches it against the identity in the keychain).
+      # -allowProvisioningUpdates is kept ONLY so the App Manager key can create/renew the App
+      # Store *provisioning profile* to pair with that identity — it is not asked to mint a new
+      # certificate, which is the one thing this account's key role cannot do.
+      # -allowProvisioningDeviceRegistration is REMOVED: an App Store distribution archive never
+      # needs to register a device, and the flag has no purpose here.
+      - name: archive (xcodebuild, signed with the imported Apple Distribution identity)
         env:
           ASC_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_API_ISSUER_ID }}
@@ -204,12 +253,12 @@ jobs:
             -archivePath "$ARCHIVE_PATH" \
             archive \
             -allowProvisioningUpdates \
-            -allowProvisioningDeviceRegistration \
             -authenticationKeyPath ~/private_keys/AuthKey_${ASC_KEY_ID}.p8 \
             -authenticationKeyID "$ASC_KEY_ID" \
             -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
             DEVELOPMENT_TEAM="$TEAM_ID" \
             CODE_SIGN_STYLE=Automatic \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
             MARKETING_VERSION="${{ steps.resolve.outputs.version }}" \
             CURRENT_PROJECT_VERSION="${{ steps.resolve.outputs.build }}" \
             2>&1 | tee build/archive.log
@@ -219,6 +268,12 @@ jobs:
       #   - submit=true  → "upload": xcodebuild both re-signs for the store AND uploads to App
       #     Store Connect in the same -exportArchive call — there is no separate upload step.
       #   - submit=false → "export": produces build/export/*.ipa locally and stops there.
+      #
+      # `inputs.submit` is a boolean input; GitHub Actions expressions compare a boolean against
+      # the string 'true' as a NUMBER, not lexically (`inputs.submit != 'true'` coerces 'true' to
+      # NaN and is always true regardless of the input) — so every check below uses `!inputs.submit`
+      # / `inputs.submit` directly in `if:`, and `"${{ inputs.submit }}" = "true"` in shell, where
+      # the expression has already been substituted to the literal word `true` or `false`.
       - name: write ExportOptions.plist
         run: |
           set -euo pipefail
@@ -246,8 +301,9 @@ jobs:
           PLIST
           echo "destination=$DESTINATION" >> "$GITHUB_ENV"
 
-      # EXPORT (+ upload, when destination=upload). Same three authentication flags as the
-      # archive step — the export/upload call authenticates independently.
+      # EXPORT (+ upload, when destination=upload). Same authentication flags as the archive step
+      # (for the provisioning-profile side of -allowProvisioningUpdates) — the export/upload call
+      # authenticates independently.
       - name: export (and upload, if submit=true)
         env:
           ASC_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
@@ -267,9 +323,10 @@ jobs:
             2>&1 | tee build/export.log
 
       # Only meaningful (and only present) when destination=export — an upload leaves nothing
-      # local to publish an artifact from.
+      # local to publish an artifact from. See the boolean-input note above the ExportOptions
+      # step for why this is `!inputs.submit`, not `inputs.submit != 'true'`.
       - name: upload .ipa artifact (archive + export only, submit=false)
-        if: ${{ inputs.submit != 'true' }}
+        if: ${{ !inputs.submit }}
         uses: actions/upload-artifact@v4
         with:
           name: cluck-ios-ipa
@@ -290,10 +347,12 @@ jobs:
 
       # Always runs, success or failure: never leave a signing identity behind on the runner.
       - name: delete the temporary signing keychain
-        if: ${{ always() && env.HAVE_P12 == 'true' }}
+        if: always()
         run: |
-          security delete-keychain "$KEYCHAIN_PATH" || true
-          security list-keychains -d user -s $(security list-keychains -d user | sed 's/"//g' | grep -v "$(basename "$KEYCHAIN_PATH")")
+          if [ -n "${KEYCHAIN_PATH:-}" ]; then
+            security delete-keychain "$KEYCHAIN_PATH" || true
+            security list-keychains -d user -s $(security list-keychains -d user | sed 's/"//g' | grep -v "$(basename "$KEYCHAIN_PATH")") || true
+          fi
 
       - name: summary
         if: success()
