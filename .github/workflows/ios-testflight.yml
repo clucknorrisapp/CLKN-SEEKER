@@ -190,8 +190,19 @@ jobs:
             exit 1
           fi
           mkdir -p ~/private_keys
-          printf '%s' "$ASC_API_KEY_P8" > ~/private_keys/AuthKey_${ASC_API_KEY_ID}.p8
+          printf '%s\n' "$ASC_API_KEY_P8" > ~/private_keys/AuthKey_${ASC_API_KEY_ID}.p8
           chmod 600 ~/private_keys/AuthKey_${ASC_API_KEY_ID}.p8
+          # Fail HERE with a plain message rather than at xcodebuild's
+          # "Invalid authentication key credential (invalidPEMDocument)" (first run, 2026-09-24):
+          # the secret must be the .p8 file's text, BEGIN/END lines included. Nothing about the
+          # key is printed — only its byte count and whether it parses.
+          if ! head -1 ~/private_keys/AuthKey_${ASC_API_KEY_ID}.p8 | grep -q -- '-----BEGIN PRIVATE KEY-----' \
+             || ! openssl pkey -in ~/private_keys/AuthKey_${ASC_API_KEY_ID}.p8 -noout 2>/dev/null; then
+            echo "ASC_API_KEY_P8 is not a valid .p8 private key (got $(wc -c < ~/private_keys/AuthKey_${ASC_API_KEY_ID}.p8) bytes)." >&2
+            echo "Re-set the secret with the FILE'S TEXT: on the Mac, 'cat ~/path/to/AuthKey_${ASC_API_KEY_ID}.p8 | pbcopy' then paste. See docs/IOS_TESTFLIGHT.md." >&2
+            exit 1
+          fi
+          echo "API key file parses (PEM private key)."
 
       # REQUIRED, not optional: the `.p12` Apple Distribution identity is the only signing path
       # this workflow supports (see the file header for why cloud/managed signing does not fit
