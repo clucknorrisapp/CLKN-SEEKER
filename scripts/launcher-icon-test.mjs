@@ -28,6 +28,8 @@ const RES = path.join(ROOT, "android/app/src/main/res");
 const LISTING = path.join(ROOT, "play-store/icon.png");
 // sha256 of the Capacitor placeholder mipmap-xxxhdpi/ic_launcher.png that shipped until 2026-10-03.
 const CAPACITOR_PLACEHOLDER = new Set(["87cb2f2ffe992652bb4fa768c73719a37b5852ab17fbf8e170e888f7a42b0761"]);
+// sha256 of the Capacitor placeholder iOS AppIcon-512@2x.png that shipped until 2026-10-03.
+const IOS_PLACEHOLDER = new Set(["29e4777e319de3ee5a52c3a8004ec19d0568414004257e36d7c94a077d71c93b"]);
 
 let failures = 0;
 const ok = (name, cond, extra) => { console.log(`  ${cond ? "✓" : "✗"} ${name}${cond || extra === undefined ? "" : "  — " + extra}`); if (!cond) failures++; };
@@ -94,6 +96,26 @@ for (const d of dens) {
     ok(`${d}/${name} shows the listing icon (mean RGB diff ${score.toFixed(1)} < 12)`, score < 12, score.toFixed(1));
   }
 }
+// iOS: Apple builds the App Store icon AND the home-screen icon from this one 1024 image, so a
+// placeholder here is what the App Store page shows. Same art as the listing, no alpha (Apple
+// rejects a 1024 icon with an alpha channel).
+const IOS = path.join(ROOT, "ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png");
+if (fs.existsSync(IOS)) {
+  const digest = crypto.createHash("sha256").update(fs.readFileSync(IOS)).digest("hex");
+  ok("iOS AppIcon is not the Capacitor placeholder", !IOS_PLACEHOLDER.has(digest));
+  const img = read(IOS);
+  ok("iOS AppIcon is 1024×1024", img.width === 1024 && img.height === 1024, `${img.width}×${img.height}`);
+  let opaque = true;
+  for (let i = 3; i < img.data.length; i += 4) if (img.data[i] !== 255) { opaque = false; break; }
+  ok("iOS AppIcon has no transparency (App Store requirement)", opaque);
+  // The iOS icon (1024) is larger than the listing icon (512): scale the iOS one DOWN to 512.
+  const small = scale(img, 512, 512);
+  let sum = 0;
+  for (let i = 0; i < 512 * 512 * 4; i += 4) for (let c = 0; c < 3; c++) sum += Math.abs(small[i + c] - listing.data[i + c]);
+  const score = sum / (512 * 512 * 3);
+  ok(`iOS AppIcon shows the listing icon (mean RGB diff ${score.toFixed(1)} < 12)`, score < 12, score.toFixed(1));
+}
+
 const bg = fs.readFileSync(path.join(RES, "values/ic_launcher_background.xml"), "utf8");
 ok("adaptive background layer is black (the listing icon's own ground), not the white placeholder", /#000000/i.test(bg));
 
