@@ -1,15 +1,22 @@
-# Solana dApp Store publishing config — DRAFT for the SEEKER EDITION (android_package
-# app.clucknorris.seeker), the bundled, mobile-first app built for the Solana Mobile CLOCK IN
-# hackathon (docs/SEEKER_TARGET.md in this repo; docs/SEEKER_APP_PLAN.md in the platform repo).
+# Solana dApp Store publishing config — the SEEKER EDITION as an UPDATE to the live listing
+# (android_package app.clucknorris.school), the bundled, mobile-first app built for the Solana
+# Mobile CLOCK IN hackathon (docs/SEEKER_TARGET.md in this repo; docs/SEEKER_APP_PLAN.md in the
+# platform repo).
 #
-# Written 2026-09-22. This is a NEW listing beside the live one (config.yaml), on its own
-# package id, so publishing it cannot disturb the app that is already approved. It describes the
-# app as built on the platform repo's `develop` (PR #387 and after); anything not shipped by
-# submission day must come out of this text before it is used. Screenshots captured 2026-09-24
-# from a real build of the Seeker edition (platform repo: `node scripts/build-store-edition.mjs
-# seeker`), served statically at 1080x2400 (device pixels) and driven with Playwright against
-# clucknorris.app's live, read-only APIs — no wallet, no signing, no mocked data. Validate
-# against the dapp-store CLI before submitting.
+# ⚠️ Owner, 2026-10-03: the Seeker edition REPLACES the live app.clucknorris.school listing (it was
+# drafted 2026-09-22 as a separate app.clucknorris.seeker listing; that plan is retired). So this
+# file supersedes config.yaml's app section when the update is published: same package, same
+# publisher, the APK from `npm run build:seeker` (versionCode 10 / 2.0.0), signed with the SAME key
+# the live app was signed with. An update signed with any other key is refused by Android and by
+# the dApp Store — docs/CLOCK_IN_MAC_RUNBOOK.md §1 checks the fingerprint first.
+# Fallback ONLY if that key cannot be recovered: ship as a separate app (android_package
+# app.clucknorris.seeker, a new key) — an owner decision, never a silent switch.
+#
+# It describes the app as built from the platform repo's main @ ae3ee798 (store-seeker-v1.0.0);
+# anything not shipped by submission day must come out of this text before it is used.
+# Screenshots captured 2026-09-24 with Playwright from a statically served Seeker build against
+# clucknorris.app's live, read-only APIs — no wallet, no signing, no mocked data — not from a
+# device. Validate against the dapp-store CLI before submitting.
 #
 # ⛔ Not a hackathon requirement: dApp Store publishing is only required of WINNERS, within 30
 # days of the announcement. Keep this ready; do not publish it before the owner says so.
@@ -23,8 +30,8 @@ publisher:
       uri: ./icon.png
 
 app:
-  name: Cluck Norris for Seeker
-  android_package: app.clucknorris.seeker
+  name: Cluck Norris
+  android_package: app.clucknorris.school
   urls:
     license_url: https://clucknorris.app
     copyright_url: https://clucknorris.app

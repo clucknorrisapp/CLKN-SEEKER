@@ -8,8 +8,10 @@
 # never goes stale on them).
 #
 # Field names follow the Solana Mobile publishing schema; validate against the dapp-store CLI
-# before submitting. This app is a thin client that loads clucknorris.app; the bundled Seeker
-# edition for the CLOCK IN hackathon has its own listing draft in config.seeker.yaml.
+# before submitting. This app is a thin client that loads clucknorris.app. ⚠️ 2026-10-03: the
+# bundled Seeker edition REPLACES this app on the same package — when that update is published,
+# use config.seeker.yaml (same android_package, new APK + text); this file then describes the
+# retired remote-shell build.
 
 publisher:
   name: Cluck Norris

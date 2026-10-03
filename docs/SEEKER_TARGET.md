@@ -10,8 +10,10 @@ Wallet Checkup and the rest of the toolkit) — as a bundled Android app for the
 it risks the listing that already exists. The seeker target:
 
 - **bundles** its frontend (no `server.url`), so the app works without the website being reachable;
-- carries **its own appId, `app.clucknorris.seeker`**, so it ships alongside the live listing and
-  both can be installed on the same device while the new one is tested;
+- ⚠️ **ships as `app.clucknorris.school`, REPLACING the live listing** (owner, 2026-10-03). It was
+  first built on its own appId `app.clucknorris.seeker`; that plan is retired. An update only
+  installs over the live app when it is signed with the live app's key and has a higher
+  versionCode (10 / 2.0.0 here). Side-by-side testing uses the dev build, `app.clucknorris.seeker.dev`;
 - consumes a **pinned, checksummed artifact** exactly like `googlePlay` and `ios` — but is
   **content-scanned by different rules**, see below.
 
@@ -48,7 +50,8 @@ npm run build:seeker
 ```
 
 which runs `prep-dist.mjs store` with `CLKN_TARGET=seeker`, syncs Capacitor, and assembles a
-release APK with `-PclknAppId=app.clucknorris.seeker`.
+release APK with `-PclknAppId=app.clucknorris.school -PclknVersionCode=10 -PclknVersionName=2.0.0`,
+signed with `android/keystore.properties` (the live dApp Store key — see docs/CLOCK_IN_MAC_RUNBOOK.md).
 
 ## ⛔ It does not build yet, and that is by design
 
