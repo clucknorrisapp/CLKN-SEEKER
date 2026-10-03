@@ -74,6 +74,11 @@ jobs:
       - name: bundle guard test
         run: node scripts/prep-dist-guard-test.mjs
 
+      # Google Play rejected the app (2026-10-03, Misleading Claims) because the installed
+      # launcher icon was still Capacitor's placeholder while the listing showed our art.
+      - name: launcher icon matches the store listing
+        run: node scripts/launcher-icon-test.mjs
+
       # A placeholder dist is all the solana target needs — its capacitor config points at the
       # live site, so the bundle is not what is under test here. The Kotlin is.
       - name: prepare web assets

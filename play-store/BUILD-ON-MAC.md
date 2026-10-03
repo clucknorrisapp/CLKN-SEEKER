@@ -134,8 +134,18 @@ Privacy policy URL for the listing: **https://clucknorris.app/privacy/store**
 
 ## Rebuilding later
 When the store bundle is updated, I bump `store-edition.lock` and you just re-run
-**step 4** (`npm run build:play`) — steps 0–3 are one-time. Bump `versionCode` in
-`android/app/build.gradle` before each new Play upload (Play rejects a reused code).
+**step 4** — steps 0–3 are one-time. The versionCode is now passed in, not edited in
+`build.gradle`, and the build refuses to run without it (Play rejects a reused code). Look up
+the highest versionCode in Play Console → App bundle explorer, add one:
+```bash
+node scripts/launcher-icon-test.mjs          # the installed icon must be the listing icon
+CLKN_PLAY_VERSION_CODE=<last + 1> CLKN_PLAY_VERSION_NAME=1.0.4 npm run build:play
+```
+⚠️ 2026-10-03: Play rejected the app (Misleading Claims — "installed icon differs from the
+store listing") because the launcher icon was still Capacitor's placeholder. The icons in
+`android/app/src/main/res/mipmap-*` are now generated from `play-store/icon.png`, and
+`launcher-icon-test.mjs` (CI) fails if they ever drift back. If you change the listing icon,
+regenerate the launcher icons from it in the same commit.
 
 ## If something errors
 Copy the last ~20 lines of output and paste them to me — most failures are a missing
