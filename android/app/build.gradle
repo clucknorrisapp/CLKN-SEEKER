@@ -15,6 +15,13 @@ apply plugin: 'kotlin-android'
 // Every keystore*.properties file is gitignored and must never be committed.
 def clknAppId = project.hasProperty('clknAppId') ? project.clknAppId : 'app.clucknorris.school'
 def clknKeystoreName = project.hasProperty('clknKeystore') ? project.clknKeystore : 'keystore.properties'
+// versionCode / versionName per target. Unset = the values every earlier build used (5 / "1.0"),
+// so the Solana, Play and iOS-side builds are unchanged. The Seeker build (owner, 2026-10-03:
+// it REPLACES the live app.clucknorris.school dApp Store listing) passes its own — Android only
+// installs an update over the existing app when the versionCode is higher AND the signing key
+// is the same, so it must be built with that listing's keystore.properties.
+def clknVersionCode = project.hasProperty('clknVersionCode') ? project.clknVersionCode.toInteger() : 5
+def clknVersionName = project.hasProperty('clknVersionName') ? project.clknVersionName.toString() : "1.0"
 
 // ── Wallet layer: in or OUT of the binary ──────────────────────────────────
 // The Google Play / iOS edition is education-only (its legal pages promise "no wallet"), and the
@@ -45,8 +52,8 @@ android {
         applicationId clknAppId
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 5
-        versionName "1.0"
+        versionCode clknVersionCode
+        versionName clknVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

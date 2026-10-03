@@ -53,9 +53,12 @@ const targets: Record<string, CapacitorConfig> = {
   // for the EDUCATION-ONLY bundles, whose excluded endpoints the server refuses. The Seeker
   // edition is the full product — wallet, tools, signing — so it has nothing to be refused
   // from, and a marker would only invite someone to treat it as authorisation. It is not.
+  // ⚠️ Owner, 2026-10-03: the Seeker edition REPLACES the live dApp Store listing, so it ships as
+  // app.clucknorris.school (the Solana target's id) — signed with that listing's keystore and a
+  // higher versionCode (package.json build:seeker). The dev build keeps its own .seeker.dev id.
   seeker: {
     ...common,
-    appId: 'app.clucknorris.seeker',
+    appId: 'app.clucknorris.school',
     backgroundColor: '#0b0c0e',
   },
   // ── STORE edition (Apple App Store) — bundled, no server.url. ──
