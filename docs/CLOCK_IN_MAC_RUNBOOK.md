@@ -34,19 +34,22 @@ Everything else (code, releases, the pin, docs, the deck) is the cloud session's
 cd ~/CLKN-SEEKER && git checkout claude/seeker-integration && git pull && npm ci
 node -v                         # Capacitor 8 needs Node 22+
 echo "$ANDROID_HOME"; java -version
-ls keystore.properties          # the dApp Store (app.clucknorris.school) key — must exist
+ls android/keystore.properties  # the dApp Store (app.clucknorris.school) key — Gradle resolves it
+                                # via rootProject.file(), i.e. relative to android/, NOT the repo root
 adb devices                     # the Seeker, USB debugging on, "device" not "unauthorized"
-node -p "require('./store-edition.lock').seeker"   # must be a real pin, not undefined
+node -p "JSON.parse(require('fs').readFileSync('store-edition.lock','utf8')).seeker"   # a real pin, not undefined
 ```
 
 If `store-edition.lock` has no `seeker` entry yet, the cloud session has not cut the release —
 stop and say so; do **not** fake a pin (the build refuses on purpose).
 
-`keystore.properties` must be the key the **current dApp Store app** was signed with. Confirm it:
+`android/keystore.properties` must be the key the **current dApp Store app** was signed with
+(NOT `keystore.play.properties` / `clkn-edu.jks` — that is the Google Play key for
+`app.clucknorris.edu` and cannot sign a dApp Store update). Confirm it:
 
 ```bash
 # fingerprint of the key you are about to sign with
-keytool -list -v -keystore "$(grep storeFile keystore.properties | cut -d= -f2)" | grep SHA256
+keytool -list -v -keystore "$(grep storeFile android/keystore.properties | cut -d= -f2)" | grep SHA256
 # fingerprint of the app already on the phone
 adb shell pm path app.clucknorris.school          # → package:/data/app/.../base.apk
 adb pull <that path> current.apk && "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs current.apk | grep SHA-256
@@ -55,7 +58,28 @@ adb pull <that path> current.apk && "$ANDROID_HOME"/build-tools/*/apksigner veri
 The two SHA-256 values must match. If they do not, **stop** — an APK signed with a different key
 cannot replace the live app, and the dApp Store would reject it as an update.
 
-## 2. Build + sign
+## 1b. Test TODAY without the key or the pin — the dev build
+
+Device testing does not need the release key. The dev build installs as its own app
+(`app.clucknorris.seeker.dev`, debug-signed) BESIDE the live one, so nothing on the phone is
+replaced. Build its bundle from the platform repo's `develop` (that is what production gets
+once promoted):
+
+```bash
+cd ~/cluck-norris-school && git fetch origin develop && git checkout develop && git pull && npm ci
+node scripts/build-store-edition.mjs seeker        # → release/store-edition-seeker-<v>.tgz
+cd ~/CLKN-SEEKER
+CLKN_SEEKER_DEV=1 CLKN_SEEKER_DEV_TGZ="$(ls ~/cluck-norris-school/release/store-edition-seeker-*.tgz | tail -1)" npm run build:seeker-dev
+adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+Run the §4 checklist against it now (use `app.clucknorris.seeker.dev` in the logcat `pidof`).
+⚠️ Until the cloud session says production is promoted, the swap, Revoke and the SKR pass call
+endpoints the live backend may not have yet — a FAIL there before promotion is expected, note it
+and move on. Everything that already worked on the website (school, Ask Cluck, Checkup, Rent
+Reclaim, Firepit, tools pass) is a real test today.
+
+## 2. Build + sign (the release — needs the pin AND the dApp Store key)
 
 ```bash
 npm run build:seeker
