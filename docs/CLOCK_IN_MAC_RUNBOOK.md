@@ -58,6 +58,26 @@ adb pull <that path> current.apk && "$ANDROID_HOME"/build-tools/*/apksigner veri
 The two SHA-256 values must match. If they do not, **stop** — an APK signed with a different key
 cannot replace the live app, and the dApp Store would reject it as an update.
 
+**The answer, read from the chain on 2026-10-04** (release NFT metadata
+`extensions.solana_dapp_store.android_details.cert_fingerprint`, and the same value on the
+developer console's Releases → Fingerprints card), so the `adb` half is optional:
+
+```
+SHA256: 7A:95:5F:A4:7A:0D:47:FB:A3:45:7F:FF:CC:C3:2E:32:7C:14:B4:EC:7D:4E:87:40:EA:0A:C5:AB:05:D3:97:AA
+```
+
+Any `.jks` whose `keytool -list -v` prints that line is the live key. The live listing is
+`app.clucknorris.school` version `1.0` / versionCode **1** (any update needs versionCode ≥ 2;
+`build:seeker` uses 10). The publisher wallet — fee payer of the release mint and owner / update
+authority of both NFTs — is `4Ws6jXEGQ7MG61Ke8qiuGrXhdcYX2NNVCtg3xRMsuLs8`; the `-k` keypair
+handed to `dapp-store` must derive that public key (`solana-keygen pubkey <file>`). App NFT
+`AkZnKGXUdKz8MUGEjjgsqsgMH6xXr1LxhQ59sZiumWUs`, release NFT
+`6rThiugqQHPMma6Qps8fv8YntktDDPJsnFoKs2XMLGvY`. That wallet held ~0.008 SOL on 2026-10-04 —
+top it up before `dapp-store create release` (a new release NFT is ~0.02 SOL of rent + fees).
+The developer console's Storage page is set to the portal-managed Cloudflare R2 bucket, so there
+is no Arweave/Irys funding step; CLI submission uses an API key from the console (store it in the
+password manager / shell env, never in `config.yaml`).
+
 ## 1b. Test TODAY without the key or the pin — the dev build
 
 Device testing does not need the release key. The dev build installs as its own app
