@@ -119,7 +119,8 @@ Any candidate: `keytool -list -v -keystore <file> | grep SHA256` must print
 same `IFS= read -rs`, same backslash doubling, same Gradle proof — with three substitutions: the
 target file is `keystore.properties` (not `keystore.seeker.properties`), `storeFile=../<the
 recovered file's name>.jks`, and `keyAlias=` the alias `keytool -list` printed for it; the proof
-is then `( cd .. && ./gradlew -q :app:verifyKeystore )` (the default properties file). Then run:
+is then `./gradlew -q :app:verifyKeystore` run inside `android/` (the default properties file).
+Then, from the repo root, run:
 
 ```bash
 rm -f cluck-norris-seeker-*.apk   # no stale APK from an earlier run can be handed over by mistake (Codex on e5fbefb, P2)
@@ -174,7 +175,7 @@ unset PW PWE
 #    it — the identical path the release signing uses. Prints MATCH, or says which of the three
 #    (store password, alias, key password) is wrong. Every release build repeats this check and
 #    refuses to build if it fails, so a bad file can never produce a signed-looking APK.
-( cd .. && ./gradlew -q :app:verifyKeystore -PclknKeystore=keystore.seeker.properties )
+./gradlew -q :app:verifyKeystore -PclknKeystore=keystore.seeker.properties   # gradlew lives HERE, in android/
 # 4. Prove the three things that matter before building anything.
 ls -l clkn-seeker.jks keystore.seeker.properties   # both exist, properties is -rw-------
 ls -l app/../clkn-seeker.jks                        # the storeFile path resolves from app/
