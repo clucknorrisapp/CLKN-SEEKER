@@ -114,9 +114,11 @@ find / \( -name "*.jks" -o -name "*.keystore" -o -name "keystore*.properties" \)
 Any candidate: `keytool -list -v -keystore <file> | grep SHA256` must print
 `7A:95:5F:A4:7A:0D:47:FB:A3:45:7F:FF:CC:C3:2E:32:7C:14:B4:EC:7D:4E:87:40:EA:0A:C5:AB:05:D3:97:AA`.
 
-**Found → §2-update.** Put the `.jks` and its password in the password manager FIRST, then write
-`android/keystore.properties` exactly as §2a step 3 does (storeFile relative to `android/app/`,
-`read -rs`, nothing in history) and run:
+**Found → §2-update.** Put the `.jks` and its password in the password manager FIRST, copy the
+`.jks` into `android/`, then write `android/keystore.properties` exactly as §2a step 3 does —
+same `read -rs`, same backslash doubling, same MATCH check — with three substitutions: the
+target file is `keystore.properties` (not `keystore.seeker.properties`), `storeFile=../<the
+recovered file's name>.jks`, and `keyAlias=` the alias `keytool -list` printed for it. Then run:
 
 ```bash
 rm -f cluck-norris-seeker-*.apk   # no stale APK from an earlier run can be handed over by mistake (Codex on e5fbefb, P2)
