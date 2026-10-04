@@ -307,6 +307,19 @@ await runDev({ ...PLAY,
   console.log(`  ${relClean ? "✓" : "✗"} build:seeker is the PINNED release path and never touches seeker-dev`);
   if (!devDebug) failures++;
   console.log(`  ${devDebug ? "✓" : "✗"} build:seeker-dev is debug-only, under its own applicationId`);
+  // Owner, 2026-10-04: the Seeker edition is its OWN listing with its OWN key. Gradle's
+  // applicationId (-PclknAppId) and Capacitor's appId must agree, the id must never be the live
+  // listing's, and the build must name its own keystore file — the default keystore.properties is
+  // the live app.clucknorris.school key, and signing the new listing with it (or vice versa) is
+  // exactly the mix-up this guards. The release build itself refuses to run without the file.
+  const cap = readFileSync(join(ROOT, "capacitor.config.ts"), "utf8");
+  const capSeeker = /seeker:\s*\{[^}]*appId:\s*'app\.clucknorris\.seeker'/.test(cap);
+  const ownId = rel.includes("-PclknAppId=app.clucknorris.seeker ") && !rel.includes("app.clucknorris.school");
+  const ownKey = rel.includes("-PclknKeystore=keystore.seeker.properties");
+  if (!(capSeeker && ownId)) failures++;
+  console.log(`  ${capSeeker && ownId ? "✓" : "✗"} the Seeker target is app.clucknorris.seeker in BOTH capacitor.config.ts and build:seeker (never the live listing's id)`);
+  if (!ownKey) failures++;
+  console.log(`  ${ownKey ? "✓" : "✗"} build:seeker signs with its own keystore.seeker.properties, not the live listing's default keystore.properties`);
 }
 
 // Structural: build:ios must be the PINNED store-edition path (prep:store, same as build:play)

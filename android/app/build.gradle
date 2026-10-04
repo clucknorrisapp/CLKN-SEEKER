@@ -44,6 +44,16 @@ def keystoreProperties = new Properties()
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
+// ⚠️ A RELEASE build with no keystore file must FAIL, not succeed. With the file missing the
+// release signingConfig above is empty and Gradle happily writes app-release-unsigned.apk — a
+// build that "worked" and cannot be installed or published, found only when apksigner or the
+// store refuses it. Debug builds (CI, the .dev targets) never read a keystore and are untouched.
+gradle.taskGraph.whenReady { graph ->
+    def wantsRelease = graph.allTasks.any { t -> t.project == project && (t.name ==~ /(assemble|bundle|package)Release/) }
+    if (wantsRelease && !keystorePropertiesFile.exists()) {
+        throw new GradleException("Release build for ${clknAppId} needs android/${clknKeystoreName} (storeFile/storePassword/keyAlias/keyPassword) and it is not there — see docs/CLOCK_IN_MAC_RUNBOOK.md §2a. Refusing to produce an unsigned APK.")
+    }
+}
 
 android {
     namespace = "app.clucknorris.school"
