@@ -1,5 +1,5 @@
 {
-  "_comment": "Pinned Store-edition frontend releases consumed by scripts/prep-dist.mjs. Built + published from the MAIN app repo (see play-store/STORE-EDITION-MANIFEST.md + DELIVERY-CONTRACT.md). Bump version/url/sha256 to update the installed store app; a website change alone never affects it. Pinning freezes the bundled FRONTEND only — the app still calls the live backend, which must stay compatible with pinned versions. url -> a .tgz whose single top-level dir holds the built site (index.html at root after tar --strip-components=1). sha256 = hex digest of the .tgz (verified before bundling). sourceCommit = the main-repo commit the artifact was built from (traceability). v1: google and ios are feature-identical (no wallet either side) — they may still be pinned separately for future divergence.",
+  "_comment": "Pinned Store-edition frontend releases consumed by scripts/prep-dist.mjs. Built + published from the MAIN app repo (see play-store/STORE-EDITION-MANIFEST.md + DELIVERY-CONTRACT.md). Bump version/url/sha256 to update the installed store app; a website change alone never affects it. Pinning freezes the bundled FRONTEND only \u2014 the app still calls the live backend, which must stay compatible with pinned versions. url -> a .tgz whose single top-level dir holds the built site (index.html at root after tar --strip-components=1). sha256 = hex digest of the .tgz (verified before bundling). sourceCommit = the main-repo commit the artifact was built from (traceability). v1: google and ios are feature-identical (no wallet either side) \u2014 they may still be pinned separately for future divergence.",
   "google": {
     "version": "1.0.3",
     "url": "https://github.com/clucknorrisapp/cluck-norris-school/releases/download/store-google-v1.0.3/store-edition-google-1.0.3.tgz",
@@ -13,9 +13,9 @@
     "sourceCommit": "e5933d19988eb0db5d34e97694ba094d5d1aaae0"
   },
   "seeker": {
-    "version": "1.0.0",
-    "url": "https://github.com/clucknorrisapp/cluck-norris-school/releases/download/store-seeker-v1.0.0/store-edition-seeker-1.0.0.tgz",
-    "sha256": "6b7b0e1b1a5aca23a74bbf6731d68231e981c8b1ed8e5199fd429eaf7c8220ec",
-    "sourceCommit": "ae3ee79800540aab496f90dbc415f9b305ef9064"
+    "version": "1.0.1",
+    "url": "https://github.com/clucknorrisapp/cluck-norris-school/releases/download/store-seeker-v1.0.1/store-edition-seeker-1.0.1.tgz",
+    "sha256": "e57ad2ff4b9b9f7c5e39c69ffde48ff476faf4f4d3c7414b3e33872a00c0ee2a",
+    "sourceCommit": "3bba62b1613c472af13ebf02e710a04f9fd37c58"
   }
 }
