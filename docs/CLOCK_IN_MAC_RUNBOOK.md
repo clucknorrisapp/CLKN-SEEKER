@@ -196,14 +196,14 @@ npm run build:seeker
 "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs android/app/build/outputs/apk/release/app-release.apk
 #   the SHA-256 printed here must equal the keytool line from 2a
 "$ANDROID_HOME"/build-tools/*/aapt dump badging android/app/build/outputs/apk/release/app-release.apk | head -1
-#   expect: package: name='app.clucknorris.seeker' versionCode='1' versionName='1.0.1'
-cp android/app/build/outputs/apk/release/app-release.apk cluck-norris-seeker-1.0.1.apk   # THE file for §3, §6 and §7 on this path
+#   expect: package: name='app.clucknorris.seeker' versionCode='1' versionName='1.0.2'
+cp android/app/build/outputs/apk/release/app-release.apk cluck-norris-seeker-1.0.2.apk   # THE file for §3, §6 and §7 on this path
 ```
 
 ## 3. Install beside the live app
 
 ```bash
-adb install -r cluck-norris-seeker-1.0.1.apk
+adb install -r cluck-norris-seeker-1.0.2.apk
 ```
 
 It installs as its own app next to the live 1.0 and the `.dev` build; nothing on the phone is
@@ -261,7 +261,7 @@ Upload the final cut to YouTube as **Unlisted**; the link goes in the submission
 ## 6. Hand the APK over
 
 Attach **the one `cluck-norris-seeker-*.apk` in the repo folder** — `cluck-norris-seeker-2.0.0.apk`
-on the update path (§2.0 found the key), `cluck-norris-seeker-1.0.1.apk` on the new-listing path —
+on the update path (§2.0 found the key), `cluck-norris-seeker-1.0.2.apk` on the new-listing path —
 to a GitHub release (the browser's "Attach binaries" drop zone on the release page); that asset
 URL is the "direct download link" the submission asks for. `ls cluck-norris-seeker-*.apk` must
 list exactly one file; the `rm -f` before each build is what guarantees it. Before attaching,
@@ -287,7 +287,7 @@ publisher wallet `4Ws6…uLs8` (Phantom on the Mac, imported from the phone) —
 mint; approve every prompt or assets go missing. Storage is already set to the portal-managed R2
 bucket (Storage page), so no ArDrive top-up — but the wallet pays rent and fees, hence the ~0.05
 SOL. The first release can be submitted right there: **Home → New Version → upload
-`cluck-norris-seeker-1.0.1.apk` → Submit**, signing the release mint in the wallet. That is the
+`cluck-norris-seeker-1.0.2.apk` → Submit**, signing the release mint in the wallet. That is the
 whole publish; the CLI below is optional for the first release and the normal path for later ones.
 
 **7b. Later releases (and the first, if preferred) from the CLI.**
@@ -300,7 +300,7 @@ npx -y @solana-mobile/dapp-store-cli@latest --help      # read the real option l
 read -rs 'DAPP_STORE_API_KEY?portal API key: '; echo
 printf '%s' "$DAPP_STORE_API_KEY" | npx -y @solana-mobile/dapp-store-cli@<pinned> \
   --keypair ~/.config/solana/clkn-publisher.json \
-  --apk-file cluck-norris-seeker-1.0.1.apk \
+  --apk-file cluck-norris-seeker-1.0.2.apk \
   --whats-new "First release of the Seeker edition: the school on the device, Rent Reclaim, Firepit, Project Burn, the Locker Room, the Airdropper, in-app swap, Revoke, and the tools pass payable in SKR."
 unset DAPP_STORE_API_KEY
 ```

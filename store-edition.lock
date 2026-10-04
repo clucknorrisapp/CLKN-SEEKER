@@ -13,9 +13,9 @@
     "sourceCommit": "e5933d19988eb0db5d34e97694ba094d5d1aaae0"
   },
   "seeker": {
-    "version": "1.0.1",
-    "url": "https://github.com/clucknorrisapp/cluck-norris-school/releases/download/store-seeker-v1.0.1/store-edition-seeker-1.0.1.tgz",
-    "sha256": "e57ad2ff4b9b9f7c5e39c69ffde48ff476faf4f4d3c7414b3e33872a00c0ee2a",
-    "sourceCommit": "3bba62b1613c472af13ebf02e710a04f9fd37c58"
+    "version": "1.0.2",
+    "url": "https://github.com/clucknorrisapp/cluck-norris-school/releases/download/store-seeker-v1.0.2/store-edition-seeker-1.0.2.tgz",
+    "sha256": "0ba3fe5f09bd661e57d2eed54ee7d1ecf93240c38abb8a86a30ff76d4e5f5c92",
+    "sourceCommit": "dd00d3f5ae1bac46b461fa7341ef174a9e704ee5"
   }
 }
