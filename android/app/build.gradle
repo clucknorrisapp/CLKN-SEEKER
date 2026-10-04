@@ -53,6 +53,17 @@ gradle.taskGraph.whenReady { graph ->
     if (wantsRelease && !keystorePropertiesFile.exists()) {
         throw new GradleException("Release build for ${clknAppId} needs android/${clknKeystoreName} (storeFile/storePassword/keyAlias/keyPassword) and it is not there — see docs/CLOCK_IN_MAC_RUNBOOK.md §2a. Refusing to produce an unsigned APK.")
     }
+    // Codex on 059d26f (P2): the properties file existing is not enough — its storeFile is
+    // resolved by `file()` RELATIVE TO android/app/, so a bare "clkn-seeker.jks" that lives in
+    // android/ passes the check above and then fails deep inside packageRelease. Resolve it the
+    // same way the signingConfig does and say where it looked.
+    if (wantsRelease) {
+        def storeName = keystoreProperties['storeFile']
+        def storeAt = storeName ? file(storeName) : null
+        if (!storeAt || !storeAt.exists()) {
+            throw new GradleException("Release build for ${clknAppId}: ${clknKeystoreName} names storeFile=${storeName}, which resolves to ${storeAt} and does not exist. storeFile is relative to android/app/ (use ../clkn-seeker.jks for a keystore in android/) or absolute — docs/CLOCK_IN_MAC_RUNBOOK.md §2a.")
+        }
+    }
 }
 
 android {

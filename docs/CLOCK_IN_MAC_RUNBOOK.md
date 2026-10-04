@@ -92,28 +92,34 @@ Reclaim, Firepit, tools pass) is a real test today.
 
 ## 2. Make the Seeker key (once, ~2 minutes), then build + sign
 
-**2a. The key.** Generated on the Mac, kept in two places only: this gitignored folder and the
-owner's password manager (the `.jks` file AND both passwords — losing this is exactly the hunt
-that produced this plan). Ask for the passwords interactively; never put them on the command line
-where shell history keeps them.
+**2a. The key.** Generated on the Mac, kept in exactly two places: the owner's password manager
+and this gitignored folder (the `.jks` file AND the password — losing this is the hunt that
+produced this plan). ⚠️ Codex on 059d26f, P1: a password typed inside a command — a here-doc, an
+`export`, a `-storepass` flag — is written to `~/.zsh_history` in clear, where no `.gitignore`
+helps. So every secret below is typed at a PROMPT that echoes nothing, never inside a command.
 
 ```bash
 cd ~/CLKN-SEEKER/android
+# 1. The password: generate it IN the password manager (one strong password, used for both the
+#    store and the key), save the entry there FIRST, then come back here.
+# 2. The keystore. keytool prompts for the password itself (nothing on the command line).
 keytool -genkeypair -v -keystore clkn-seeker.jks -alias clkn-seeker -keyalg RSA -keysize 4096 -validity 10000 \
   -dname "CN=Cluck Norris, O=Cluck Norris, C=US"
-# it prompts for the keystore password (use one strong password for both store and key)
-cat > keystore.seeker.properties <<'EOP'
-storeFile=clkn-seeker.jks
-storePassword=<the password>
-keyAlias=clkn-seeker
-keyPassword=<the password>
-EOP
-git status --short            # must show NOTHING under android/ — both files are gitignored
-keytool -list -v -keystore clkn-seeker.jks | grep SHA256   # record this line in the password manager too
+# 3. The properties file. `read -rs` echoes nothing and leaves nothing in history; the file is
+#    written by the shell, not pasted. storeFile is RELATIVE TO android/app/ (Gradle's
+#    `file()` in app/build.gradle resolves it from the app module — Codex on 059d26f, P2), hence `../`.
+read -rs 'PW?keystore password: '; echo
+umask 077 && printf 'storeFile=../clkn-seeker.jks\nstorePassword=%s\nkeyAlias=clkn-seeker\nkeyPassword=%s\n' "$PW" "$PW" > keystore.seeker.properties
+unset PW
+# 4. Prove the three things that matter before building anything.
+ls -l clkn-seeker.jks keystore.seeker.properties   # both exist, properties is -rw-------
+ls -l app/../clkn-seeker.jks                        # the storeFile path resolves from app/
+git status --short                                 # must print NOTHING — both are gitignored
+keytool -list -v -keystore clkn-seeker.jks | grep SHA256   # prompts for the password; record this line in the password manager
 ```
 
-Then copy `clkn-seeker.jks` into the password manager as a file attachment together with the
-password and the alias.
+Then attach `clkn-seeker.jks` to the same password-manager entry (file attachment) with the alias
+`clkn-seeker` and the SHA256 line. Two copies exist from this moment: the manager and this folder.
 
 **2b. The build.**
 
@@ -195,30 +201,50 @@ asks for. Tell the cloud session the URL; it updates the submission text and the
 
 ## 7. Publish the new listing (only on the owner's word — not a hackathon requirement)
 
-Same publisher account (developer console, verified 29 May 2026), same wallet, a NEW app. The
-`dapp-store` CLI version the May release used is in `package.json`; `validate` first and let it
-say what the console-era flow needs (it may or may not want a `publisher.address`).
+⚠️ Rewritten after Codex on 059d26f (P2): the config-driven `dapp-store validate / create app /
+create release / publish submit` flow is **legacy and no longer in the CLI**, and this repo never
+pinned the CLI. The current flow, from docs.solanamobile.com/dapp-store (`submit-new-app`,
+`publishing-cli`, read 2026-10-04): **a NEW app is created in the Publisher Portal UI, and the CLI
+only ships releases to an app that already exists there with its App NFT.** `dapp-store/
+config.seeker.yaml` is therefore the SOURCE for the portal form (copy its texts and media into the
+form), not a file the CLI reads.
+
+**7a. Create the app in the portal (browser, publisher wallet in Phantom).**
+https://publish.solanamobile.com → bottom-left menu → **Add a dApp → New dApp**. Fill the form
+from `dapp-store/config.seeker.yaml` (name, package `app.clucknorris.seeker`, descriptions, URLs,
+icon, banner, the seven screenshots). The portal asks the connected wallet — it must be the
+publisher wallet `4Ws6…uLs8` (Phantom on the Mac, imported from the phone) — to sign the App NFT
+mint; approve every prompt or assets go missing. Storage is already set to the portal-managed R2
+bucket (Storage page), so no ArDrive top-up — but the wallet pays rent and fees, hence the ~0.05
+SOL. The first release can be submitted right there: **Home → New Version → upload
+`cluck-norris-seeker-1.0.1.apk` → Submit**, signing the release mint in the wallet. That is the
+whole publish; the CLI below is optional for the first release and the normal path for later ones.
+
+**7b. Later releases (and the first, if preferred) from the CLI.**
 
 ```bash
 cd ~/CLKN-SEEKER
-cp dapp-store/config.seeker.yaml dapp-store/config.yaml.seeker-run.yaml   # work on a copy; the live config.yaml stays
-cp android/app/build/outputs/apk/release/app-release.apk dapp-store/app-seeker-release.apk
-export DAPP_STORE_API_KEY=...        # from the console's API Keys page (password manager), this shell only
-npx dapp-store validate -k ~/path/to/publisher-keypair.json -b "$ANDROID_HOME"/build-tools/<ver> -c dapp-store/config.yaml.seeker-run.yaml
-npx dapp-store create app     -k ~/path/to/publisher-keypair.json -c dapp-store/config.yaml.seeker-run.yaml     # mints the app.clucknorris.seeker App NFT
-npx dapp-store create release -k ~/path/to/publisher-keypair.json -b "$ANDROID_HOME"/build-tools/<ver> -c dapp-store/config.yaml.seeker-run.yaml
-npx dapp-store publish submit -k ~/path/to/publisher-keypair.json -c dapp-store/config.yaml.seeker-run.yaml --requestor-is-authorized --complies-with-solana-dapp-store-policies
+npx -y @solana-mobile/dapp-store-cli@latest --help      # read the real option list first; pin the version it prints into package.json devDependencies before relying on it
+# API key: from the console's API Keys page, stored in the password manager. Typed at a silent
+# prompt and fed on STDIN — never `export`ed, never on the command line (shell history).
+read -rs 'DAPP_STORE_API_KEY?portal API key: '; echo
+printf '%s' "$DAPP_STORE_API_KEY" | npx -y @solana-mobile/dapp-store-cli@<pinned> \
+  --keypair ~/.config/solana/clkn-publisher.json \
+  --apk-file cluck-norris-seeker-1.0.1.apk \
+  --whats-new "First release of the Seeker edition: the school on the device, Rent Reclaim, Firepit, Project Burn, the Locker Room, the Airdropper, in-app swap, Revoke, and the tools pass payable in SKR."
+unset DAPP_STORE_API_KEY
 ```
 
-The CLI writes the minted `address:` lines back into the config copy — that copy is the real
-record; keep it (it holds only public addresses) and tell the cloud session the App and release
-NFT addresses. The publisher keypair is the wallet `4Ws6…uLs8` exported from Phantom; the one-line
-conversion from its base58 export to the JSON the CLI takes is the cloud session's to hand over
-at that moment, and the JSON lives only in the password manager and a gitignored folder.
+The portal matches the APK's package name to the app from 7a, mints the release NFT with the
+keypair, and submits it. `--keypair` is the publisher wallet `4Ws6…uLs8`: the base58 export from
+Phantom becomes a Solana-CLI JSON keypair with one line the cloud session hands over at that
+moment; the JSON lives only in `~/.config/solana/` (mode 600) and the password manager, never in
+this repo. After it lands, tell the cloud session the new App and release NFT addresses (public).
 
 ## Never
 
 - commit `keystore*.properties`, `*.jks`, `.env`, or any key — `git status` before every commit
 - keep the new `.jks` in only one place: it goes to the password manager the minute it exists
+- type a password or API key inside a command (here-doc, `export`, `-storepass`) — history keeps it
 - publish to the dApp Store before the owner says so (only winners must publish, within 30 days)
 - move funds from a script — every transaction is a human tap on the phone

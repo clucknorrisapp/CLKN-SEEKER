@@ -12,6 +12,14 @@
 # docs/CLOCK_IN_MAC_RUNBOOK.md §2), the APK from `npm run build:seeker` (versionCode 1 / 1.0.1).
 # The live 1.0 listing stays as it is; whether it is ever retired is the owner's later call.
 #
+# ⚠️ HOW THIS FILE IS USED (Codex on 059d26f, P2; docs.solanamobile.com/dapp-store read 2026-10-04):
+# the config-driven CLI flow (validate / create app / create release / publish submit) is legacy and
+# gone from @solana-mobile/dapp-store-cli. A NEW app is created in the Publisher Portal UI and the
+# CLI only ships releases (--apk-file / --apk-url, --keypair, API key on stdin) to an app that
+# already exists there. So this file is the SOURCE the owner copies into the portal's "New dApp"
+# form — texts, URLs, icon, banner, screenshots — not an input the CLI parses. Keep it true to the
+# pinned build all the same: it is what the listing will say. docs/CLOCK_IN_MAC_RUNBOOK.md §7.
+#
 # It describes the app as built from the platform repo's main @ ae3ee798 (store-seeker-v1.0.0);
 # anything not shipped by submission day must come out of this text before it is used.
 # Screenshots captured 2026-09-24 with Playwright from a statically served Seeker build against
@@ -99,7 +107,8 @@ release:
       new_in_version: |
         First release of the Seeker edition: the school bundled on the device, Rent Reclaim,
         Firepit, Project Burn and the Locker Room signing through Mobile Wallet Adapter, the
-        Airdropper with receipts (free for everyone), and the SKR door on the tools pass.
+        Airdropper with receipts (free for everyone), in-app swap and approval revoke, and the
+        tools pass with the SKR door — payable in SKR, too.
   media:
     - purpose: icon
       uri: ./icon.png
