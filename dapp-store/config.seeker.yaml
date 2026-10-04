@@ -22,6 +22,9 @@
 #
 # It describes the app as built from the platform repo's main @ ae3ee798 (store-seeker-v1.0.0);
 # anything not shipped by submission day must come out of this text before it is used.
+# ⚠️ THE SCHOOL LEADS (owner, 2026-10-04: "Rent reclaim sure as heck shouldn't be a focus … the
+# school is the focus"). The listing text opens with the school, then Ask, the Daily, the Toolkit
+# with Swap first, then the pass. Rent Reclaim is one card among the wallet tools, not "start here".
 # Screenshots captured 2026-09-24 with Playwright from a statically served Seeker build against
 # clucknorris.app's live, read-only APIs — no wallet, no signing, no mocked data — not from a
 # device. Validate against the dapp-store CLI before submitting.
@@ -53,62 +56,67 @@ release:
   catalog:
     en-US:
       name: Cluck Norris for Seeker
-      subtitle: Crypto school and wallet tools, built for the phone
-      short_description: Get your rent back, learn the hard knocks, and run real Solana tools from your Seeker
+      subtitle: The crypto school that tells you the truth, with real tools built in
+      short_description: Learn the hard knocks for free, then connect your wallet and use real Solana tools from your Seeker
       long_description: |
         "No participation trophies. No hand-holding. Just hard knocks."
 
-        Cluck Norris for Seeker is the School of Crypto Hard Knocks rebuilt for the phone: the
-        free school bundled on the device, and fourteen Solana tools — the ones that act on your
-        tokens connect to your wallet through Mobile Wallet Adapter and sign on the phone.
-
-        START HERE — RENT RECLAIM
-        Dead token accounts are holding your SOL. Rent Reclaim shows exactly which accounts
-        can be closed and how much comes back, then closes them with your wallet's approval.
-        Every new token you touch leaves another account behind, so it is worth checking again
-        later. We charge nothing for getting your own money back; the network fee for each close
-        is shown before you approve it.
+        People lose money in crypto because nobody told them the truth plainly. Cluck Norris
+        for Seeker is the School of Crypto Hard Knocks on your phone: a free school that works
+        with no signal, a toolkit of real Solana tools that sign with your own wallet, and a
+        daily page to come back to.
 
         THE SCHOOL — free, on the device, works with no signal
-        - 58 lessons across four courses, quizzes on most of them, belt ranks; your progress
-          stays on this phone
-        - Ask Cluck, a tough-love AI professor
-        - Seven languages: English, Spanish, Hindi, Italian, Portuguese, Vietnamese, Chinese
+        - 64 lessons across four courses, from The Incubator (no wallet, no jargon) to the LP
+          Lab (how liquidity actually works, and how it takes your money)
+        - Quizzes on most lessons, belt ranks, and progress that stays on this phone
+        - The Library: every term in the school, searchable, linked to the lesson that teaches it
+        - The Solana Room: rent, fees, outages, the Seeker itself — the facts, dated and sourced
+        - Ten languages: English, Spanish, Hindi, Italian, Portuguese, Vietnamese, Chinese,
+          Korean, Turkish, Indonesian
 
-        FREE, NO PASS
-        - Listing Checkup: the checks listing venues run on a token, run on yours first
-        - The Daily: today's lesson, one question, and where the majors closed
-        - Wallet Checkup: your connected wallet, or any address you paste — its approvals,
-          freeze and mint authority, and what each one lets someone do
+        ASK CLUCK
+        A tough-love AI professor who answers the question you actually asked. Free, no wallet.
 
-        WITH YOUR WALLET — signed on the phone, free
-        - Rent Reclaim (above)
-        - The Airdropper: a token to many wallets at once, with a public receipt for every
-          row. No pass, no fee from us — you pay only the network's own fees and rent
+        THE DAILY
+        Today's lesson, one question, and where the majors closed. Something to open every day.
+
+        THE TOOLKIT — connect your wallet, sign on the phone, keep custody
+        Everything that acts on your tokens goes through Mobile Wallet Adapter and is signed by
+        your wallet on this device. Every action that costs money or cannot be undone names its
+        exact consequence before you confirm.
+        - Swap: SOL, SKR, CLKN and USDC in the app — rate, minimum received and price impact
+          shown before you sign; non-custodial
         - Firepit: burn worthless junk and reclaim the SOL under it, everything priced first
         - Project Burn: burn project supply and get a verifiable on-chain receipt
         - The Locker Room: lock tokens on Jupiter Lock, non-custodially, with public proof
+        - The Airdropper: a token to many wallets at once, with a public receipt for every row.
+          Free — you pay only the network's own fees and rent
+        - Rent Reclaim: dead token accounts are holding your SOL; see which can be closed and how
+          much comes back, then close them with your wallet's approval. We charge nothing
+        - Wallet Checkup: the connected wallet, or any address you paste — approvals, freeze and
+          mint authority, what each one lets someone do, and revoke right there
+        - Listing Checkup: the checks listing venues run on a token, run on yours first
 
         THE HEAVY TOOLS — one unified tools pass
-        - Wallet X-Ray, Holders, Trace: what a wallet did, who holds a token, where money went
-        The pass is free while you hold CLKN worth its stated dollar amount — or, in this app,
-        SKR worth its own stated amount. Otherwise a small one-off SOL payment buys a short pass
-        to all of them. The current terms are shown live in the app. Nothing is gated behind
-        SKR, least of all Rent Reclaim.
+        Wallet X-Ray, Holders and Trace: what a wallet did, who holds a token, where money went.
+        Preview any of them free. Running one needs the pass: free while you hold CLKN worth its
+        stated dollar amount — or, in this app, SKR worth its own stated amount — otherwise a
+        small one-off payment, in SOL or in SKR, buys a seven-day pass to all of them. The
+        current terms are shown live in the app. Nothing is gated behind SKR.
 
         THE HATCHERY — priced per mint, not part of the pass
-        - Mint a token properly, with the authorities set the way you meant. One fee per mint,
-          in SOL or, at a discount, in CLKN; the price is shown before you confirm.
+        Mint a token properly, with the authorities set the way you meant. One fee per mint, in
+        SOL or, at a discount, in CLKN; the price is shown before you confirm.
 
         WHAT IT NEVER DOES
-        It never takes custody. It never asks for your seed phrase. Every action that costs
-        money or cannot be undone names its exact consequence before you confirm it, and a
-        transaction that did not land is reported as not landed, never as done.
+        It never takes custody. It never asks for your seed phrase. It never tells you to buy
+        anything. A transaction that did not land is reported as not landed, never as done.
       new_in_version: |
-        First release of the Seeker edition: the school bundled on the device, Rent Reclaim,
-        Firepit, Project Burn and the Locker Room signing through Mobile Wallet Adapter, the
-        Airdropper with receipts (free for everyone), in-app swap and approval revoke, and the
-        tools pass with the SKR door — payable in SKR, too.
+        The Seeker edition: the whole school bundled on the device in ten languages, the Library,
+        the Solana Room, the Daily, Ask Cluck, and a Toolkit that signs with your own wallet —
+        Swap, Firepit, Project Burn, the Locker Room, the Airdropper, Rent Reclaim, Wallet Checkup
+        with revoke, and the tools pass payable in SKR.
   media:
     - purpose: icon
       uri: ./icon.png
