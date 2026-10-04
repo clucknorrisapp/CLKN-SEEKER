@@ -16,10 +16,10 @@ apply plugin: 'kotlin-android'
 def clknAppId = project.hasProperty('clknAppId') ? project.clknAppId : 'app.clucknorris.school'
 def clknKeystoreName = project.hasProperty('clknKeystore') ? project.clknKeystore : 'keystore.properties'
 // versionCode / versionName per target. Unset = the values every earlier build used (5 / "1.0"),
-// so the Solana, Play and iOS-side builds are unchanged. The Seeker build (owner, 2026-10-03:
-// it REPLACES the live app.clucknorris.school dApp Store listing) passes its own — Android only
-// installs an update over the existing app when the versionCode is higher AND the signing key
-// is the same, so it must be built with that listing's keystore.properties.
+// so the Solana, Play and iOS-side builds are unchanged. The Seeker build is its OWN dApp Store
+// listing (owner, 2026-10-04: app.clucknorris.seeker, a fresh key in keystore.seeker.properties,
+// versionCode 1 / 1.0.1 — the live app.clucknorris.school key could not be located, and an update
+// to that listing would have to be signed with it). The live listing is left untouched.
 def clknVersionCode = project.hasProperty('clknVersionCode') ? project.clknVersionCode.toInteger() : 5
 def clknVersionName = project.hasProperty('clknVersionName') ? project.clknVersionName.toString() : "1.0"
 

@@ -1,16 +1,16 @@
-# Solana dApp Store publishing config — the SEEKER EDITION as an UPDATE to the live listing
-# (android_package app.clucknorris.school), the bundled, mobile-first app built for the Solana
+# Solana dApp Store publishing config — the SEEKER EDITION as its OWN NEW LISTING
+# (android_package app.clucknorris.seeker), the bundled, mobile-first app built for the Solana
 # Mobile CLOCK IN hackathon (docs/SEEKER_TARGET.md in this repo; docs/SEEKER_APP_PLAN.md in the
 # platform repo).
 #
-# ⚠️ Owner, 2026-10-03: the Seeker edition REPLACES the live app.clucknorris.school listing (it was
-# drafted 2026-09-22 as a separate app.clucknorris.seeker listing; that plan is retired). So this
-# file supersedes config.yaml's app section when the update is published: same package, same
-# publisher, the APK from `npm run build:seeker` (versionCode 10 / 2.0.0), signed with the SAME key
-# the live app was signed with. An update signed with any other key is refused by Android and by
-# the dApp Store — docs/CLOCK_IN_MAC_RUNBOOK.md §1 checks the fingerprint first.
-# Fallback ONLY if that key cannot be recovered: ship as a separate app (android_package
-# app.clucknorris.seeker, a new key) — an owner decision, never a silent switch.
+# ⚠️ Owner, 2026-10-04: a NEW listing, not an update. The 2026-10-03 plan (replace the live
+# app.clucknorris.school listing) needed that listing's signing key, and it could not be located;
+# an update signed with any other key is refused by Android and by the dApp Store. So: same
+# publisher (wallet 4Ws6jXEGQ7MG61Ke8qiuGrXhdcYX2NNVCtg3xRMsuLs8 — the owner / update authority of
+# the live App NFT AkZnKGXUdKz8MUGEjjgsqsgMH6xXr1LxhQ59sZiumWUs), a NEW app NFT for this package, a
+# fresh key (android/keystore.seeker.properties, gitignored — generated on the Mac,
+# docs/CLOCK_IN_MAC_RUNBOOK.md §2), the APK from `npm run build:seeker` (versionCode 1 / 1.0.1).
+# The live 1.0 listing stays as it is; whether it is ever retired is the owner's later call.
 #
 # It describes the app as built from the platform repo's main @ ae3ee798 (store-seeker-v1.0.0);
 # anything not shipped by submission day must come out of this text before it is used.
@@ -31,7 +31,7 @@ publisher:
 
 app:
   name: Cluck Norris
-  android_package: app.clucknorris.school
+  android_package: app.clucknorris.seeker
   urls:
     license_url: https://clucknorris.app
     copyright_url: https://clucknorris.app
