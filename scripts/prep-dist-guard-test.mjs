@@ -313,13 +313,23 @@ await runDev({ ...PLAY,
   // the live app.clucknorris.school key, and signing the new listing with it (or vice versa) is
   // exactly the mix-up this guards. The release build itself refuses to run without the file.
   const cap = readFileSync(join(ROOT, "capacitor.config.ts"), "utf8");
-  const capSeeker = /seeker:\s*\{[^}]*appId:\s*'app\.clucknorris\.seeker'/.test(cap);
-  const ownId = rel.includes("-PclknAppId=app.clucknorris.seeker ") && !rel.includes("app.clucknorris.school");
+  const capBlock = (cap.match(/seeker:\s*\{[^}]*\}/) || [""])[0];
+  // The Capacitor appId is a switch on CLKN_SEEKER_UPDATE: default → the new listing, =1 → the
+  // live listing (update path). Both ids must be present in that one expression and nowhere else
+  // in the block.
+  const capSeeker = /appId:\s*process\.env\.CLKN_SEEKER_UPDATE\s*===\s*'1'\s*\?\s*'app\.clucknorris\.school'\s*:\s*'app\.clucknorris\.seeker'/.test(capBlock);
+  const ownId = rel.includes("-PclknAppId=app.clucknorris.seeker ") && !rel.includes("app.clucknorris.school") && !rel.includes("CLKN_SEEKER_UPDATE");
   const ownKey = rel.includes("-PclknKeystore=keystore.seeker.properties");
   if (!(capSeeker && ownId)) failures++;
-  console.log(`  ${capSeeker && ownId ? "✓" : "✗"} the Seeker target is app.clucknorris.seeker in BOTH capacitor.config.ts and build:seeker (never the live listing's id)`);
+  console.log(`  ${capSeeker && ownId ? "✓" : "✗"} the Seeker target is app.clucknorris.seeker by default in BOTH capacitor.config.ts and build:seeker (the live id only behind CLKN_SEEKER_UPDATE=1)`);
   if (!ownKey) failures++;
   console.log(`  ${ownKey ? "✓" : "✗"} build:seeker signs with its own keystore.seeker.properties, not the live listing's default keystore.properties`);
+  // The UPDATE path (only if the original key is found): live id + the ORIGINAL keystore.properties
+  // + a versionCode above the live listing's 1, and it sets the Capacitor switch so both ids agree.
+  const upd = String(pkg.scripts["build:seeker-update"] || "");
+  const updOk = upd.includes("CLKN_SEEKER_UPDATE=1") && upd.includes("-PclknAppId=app.clucknorris.school") && upd.includes("-PclknKeystore=keystore.properties") && /-PclknVersionCode=(?:[2-9]|[1-9]\d+)\b/.test(upd) && upd.includes("prep:seeker") && !upd.includes("seeker-dev") && !upd.includes("assembleDebug");
+  if (!updOk) failures++;
+  console.log(`  ${updOk ? "✓" : "✗"} build:seeker-update is the live-listing path: CLKN_SEEKER_UPDATE=1, app.clucknorris.school, the original keystore.properties, versionCode > 1, pinned release prep`);
 }
 
 // Structural: build:ios must be the PINNED store-edition path (prep:store, same as build:play)

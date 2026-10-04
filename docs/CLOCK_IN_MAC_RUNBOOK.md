@@ -90,6 +90,49 @@ endpoints the live backend may not have yet — a FAIL there before promotion is
 and move on. Everything that already worked on the website (school, Ask Cluck, Checkup, Rent
 Reclaim, Firepit, tools pass) is a real test today.
 
+## 2.0 First, two minutes: does the ORIGINAL key exist anywhere? (decides §2 vs §2-update)
+
+Owner, 2026-10-04: updating the live listing is the better outcome **if and only if** its key
+exists. What is known: the live 1.0 APK (downloaded from the portal's R2 store and read on
+2026-10-04) is the wrapper's Capacitor `solana` shell, signed with a keytool-made certificate
+"CN=Cluck Norris, OU=CLKN, O=Cluck Norris" created **2026-05-28 22:38 UTC**, built in a folder
+with no git checkout (`NO_SUPPORTED_VCS_FOUND`) — i.e. a working session's folder, not this
+repo, which only got its Capacitor project in September. The owner uploaded the APK to the portal
+from an iPad / iPhone / the work desktop. So the key was made by that session and was never on
+the work desktop. Places it can still be:
+
+```bash
+# the Mac, whole disk
+find / \( -name "*.jks" -o -name "*.keystore" -o -name "keystore*.properties" \) 2>/dev/null | grep -v -e /System -e node_modules
+```
+
+- **the claude.ai conversation of 2026-05-28** that built the APK — a file it delivered (a
+  `.jks` / `keystore.properties`) is still downloadable from that conversation;
+- Downloads on the iPad / iPhone (Files app) and the work desktop, dated 28–29 May 2026;
+- Android Studio → Build → Generate Signed Bundle / APK remembers its last keystore path.
+
+Any candidate: `keytool -list -v -keystore <file> | grep SHA256` must print
+`7A:95:5F:A4:7A:0D:47:FB:A3:45:7F:FF:CC:C3:2E:32:7C:14:B4:EC:7D:4E:87:40:EA:0A:C5:AB:05:D3:97:AA`.
+
+**Found → §2-update.** Put the `.jks` and its password in the password manager FIRST, then write
+`android/keystore.properties` exactly as §2a step 3 does (storeFile relative to `android/app/`,
+`read -rs`, nothing in history) and run:
+
+```bash
+npm run build:seeker-update       # app.clucknorris.school, versionCode 10 / 2.0.0, the ORIGINAL key
+"$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs android/app/build/outputs/apk/release/app-release.apk | grep SHA-256   # must be 7a955fa4…
+"$ANDROID_HOME"/build-tools/*/aapt dump badging android/app/build/outputs/apk/release/app-release.apk | head -1
+#   expect: package: name='app.clucknorris.school' versionCode='10' versionName='2.0.0'
+adb install -r cluck-norris-seeker-2.0.0.apk   # installs OVER the live 1.0; INSTALL_FAILED_UPDATE_INCOMPATIBLE = wrong key, stop
+```
+
+Then §4 onward as written (logcat pidof `app.clucknorris.school`), and in §7 the portal step is
+the EXISTING "Cluck Norris" app → **New Version** → upload → Submit; no New dApp form, and the
+saved `app.clucknorris.seeker` draft is simply never submitted.
+
+**Not found → §2 below, unchanged.** Do not spend the day on it: the search above is the whole
+search.
+
 ## 2. Make the Seeker key (once, ~2 minutes), then build + sign
 
 **2a. The key.** Generated on the Mac, kept in exactly two places: the owner's password manager

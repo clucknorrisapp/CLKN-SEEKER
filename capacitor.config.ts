@@ -54,12 +54,15 @@ const targets: Record<string, CapacitorConfig> = {
   // edition is the full product — wallet, tools, signing — so it has nothing to be refused
   // from, and a marker would only invite someone to treat it as authorisation. It is not.
   // ⚠️ Owner, 2026-10-04: its OWN dApp Store listing, app.clucknorris.seeker, with a fresh key
-  // (android/keystore.seeker.properties; package.json build:seeker passes the same id to Gradle).
-  // The 2026-10-03 plan to replace the live app.clucknorris.school listing needed that listing's
-  // key, which could not be located. The dev build keeps its own .seeker.dev id.
+  // (android/keystore.seeker.properties; package.json build:seeker passes the same id to Gradle) —
+  // UNLESS the original listing's key turns up, in which case `npm run build:seeker-update`
+  // (CLKN_SEEKER_UPDATE=1) ships it as the UPDATE to the live app.clucknorris.school listing,
+  // signed with that key (android/keystore.properties, cert SHA-256 7A:95:5F:A4:… — runbook §2).
+  // Capacitor's appId must agree with Gradle's applicationId either way, hence the switch here.
+  // The dev build keeps its own .seeker.dev id.
   seeker: {
     ...common,
-    appId: 'app.clucknorris.seeker',
+    appId: process.env.CLKN_SEEKER_UPDATE === '1' ? 'app.clucknorris.school' : 'app.clucknorris.seeker',
     backgroundColor: '#0b0c0e',
   },
   // ── STORE edition (Apple App Store) — bundled, no server.url. ──
