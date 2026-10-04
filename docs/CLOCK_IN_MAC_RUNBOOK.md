@@ -116,9 +116,10 @@ Any candidate: `keytool -list -v -keystore <file> | grep SHA256` must print
 
 **Found → §2-update.** Put the `.jks` and its password in the password manager FIRST, copy the
 `.jks` into `android/`, then write `android/keystore.properties` exactly as §2a step 3 does —
-same `read -rs`, same backslash doubling, same MATCH check — with three substitutions: the
+same `IFS= read -rs`, same backslash doubling, same Gradle proof — with three substitutions: the
 target file is `keystore.properties` (not `keystore.seeker.properties`), `storeFile=../<the
-recovered file's name>.jks`, and `keyAlias=` the alias `keytool -list` printed for it. Then run:
+recovered file's name>.jks`, and `keyAlias=` the alias `keytool -list` printed for it; the proof
+is then `( cd .. && ./gradlew -q :app:verifyKeystore )` (the default properties file). Then run:
 
 ```bash
 rm -f cluck-norris-seeker-*.apk   # no stale APK from an earlier run can be handed over by mistake (Codex on e5fbefb, P2)
@@ -157,16 +158,23 @@ keytool -genkeypair -v -keystore clkn-seeker.jks -alias clkn-seeker -keyalg RSA 
 # 3. The properties file. `read -rs` echoes nothing and leaves nothing in history; the file is
 #    written by the shell, not pasted. storeFile is RELATIVE TO android/app/ (Gradle's
 #    `file()` in app/build.gradle resolves it from the app module — Codex on 059d26f, P2), hence `../`.
-read -rs 'PW?keystore password: '; echo
-#    ⚠️ Codex on e5fbefb, P2: this is a JAVA PROPERTIES file, where a backslash is an escape (`\q`
-#    reads back as `q`), so a password with a backslash in it would reach keytool intact and Gradle
-#    broken. Backslashes are doubled before writing; everything else is written as typed.
+#    ⚠️ Codex on e5fbefb + 94660ac (P2 ×2): this is a JAVA PROPERTIES file. A backslash is an escape
+#    (`\q` reads back as `q`), leading whitespace after `=` is dropped, the file is read as
+#    Latin-1, and a plain `read` trims spaces at the ends. So: the password is ASCII with no space
+#    at either end (make it that way in the password manager — letters, digits, punctuation), it is
+#    read with IFS cleared, backslashes are doubled, and the PROOF below is Gradle itself opening
+#    the keystore with what it parsed — not a sed imitation of the parser.
+IFS= read -rs 'PW?keystore password: '; echo
+case "$PW" in *[!\ -~]*) echo "non-ASCII character in the password — make one with letters, digits and punctuation only"; esac
+case "$PW" in " "*|*" ") echo "the password starts or ends with a space — make one that does not"; esac
 PWE=${PW//\\/\\\\}
 umask 077 && printf 'storeFile=../clkn-seeker.jks\nstorePassword=%s\nkeyAlias=clkn-seeker\nkeyPassword=%s\n' "$PWE" "$PWE" > keystore.seeker.properties
 unset PW PWE
-#    Prove Gradle will read back the password you typed (prints MATCH, nothing else):
-#    (-storepass:env reads it from the environment of this one command — never a command-line argument)
-KSP="$(sed -n 's/^storePassword=//p' keystore.seeker.properties | sed 's/\\\\/\\/g')" keytool -list -keystore clkn-seeker.jks -storepass:env KSP >/dev/null 2>&1 && echo MATCH || echo "MISMATCH — the properties file does not open the keystore; redo step 3"
+#    THE PROOF: Gradle reads the file with Java's own Properties parser and opens the keystore with
+#    it — the identical path the release signing uses. Prints MATCH, or says which of the three
+#    (store password, alias, key password) is wrong. Every release build repeats this check and
+#    refuses to build if it fails, so a bad file can never produce a signed-looking APK.
+( cd .. && ./gradlew -q :app:verifyKeystore -PclknKeystore=keystore.seeker.properties )
 # 4. Prove the three things that matter before building anything.
 ls -l clkn-seeker.jks keystore.seeker.properties   # both exist, properties is -rw-------
 ls -l app/../clkn-seeker.jks                        # the storeFile path resolves from app/

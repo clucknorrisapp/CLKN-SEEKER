@@ -63,6 +63,38 @@ gradle.taskGraph.whenReady { graph ->
         if (!storeAt || !storeAt.exists()) {
             throw new GradleException("Release build for ${clknAppId}: ${clknKeystoreName} names storeFile=${storeName}, which resolves to ${storeAt} and does not exist. storeFile is relative to android/app/ (use ../clkn-seeker.jks for a keystore in android/) or absolute — docs/CLOCK_IN_MAC_RUNBOOK.md §2a.")
         }
+        // Codex on 94660ac (P2): the properties file existing and pointing at a real keystore is
+        // still not enough — the PASSWORD in it has been through the shell and Java's properties
+        // parser (backslashes, leading whitespace, non-Latin-1), and a sed check is not that parser.
+        // So the build opens the keystore with exactly what Gradle read, and refuses if it does not.
+        clknVerifyKeystore(keystoreProperties, storeAt, clknKeystoreName)
+    }
+}
+
+// Opens the keystore with the password and alias the properties file gives Gradle — the same
+// Properties.load() the signingConfig uses — and throws a plain message if any of the three is
+// wrong. `./gradlew -q :app:verifyKeystore [-PclknKeystore=…]` runs it on its own and prints MATCH.
+ext.clknVerifyKeystore = { Properties props, File store, String propsName ->
+    def storePass = props['storePassword'], alias = props['keyAlias'], keyPass = props['keyPassword']
+    if (!storePass || !alias || keyPass == null) throw new GradleException("${propsName}: storePassword, keyAlias and keyPassword must all be set — docs/CLOCK_IN_MAC_RUNBOOK.md §2a.")
+    def ks = null, lastErr = null
+    for (type in ["PKCS12", "JKS"]) {
+        try { def k = java.security.KeyStore.getInstance(type); store.withInputStream { k.load(it, storePass.toCharArray()) }; ks = k; break }
+        catch (Exception e) { lastErr = e }
+    }
+    if (ks == null) throw new GradleException("${propsName}: storePassword does not open ${store} (${lastErr?.message}). A leading/trailing space, a backslash or a non-ASCII character in the password is the usual cause — redo §2a step 3; the password manager entry must be what keytool was given.")
+    if (!ks.containsAlias(alias)) throw new GradleException("${propsName}: keyAlias=${alias} is not in ${store} (aliases: ${ks.aliases().toList()}).")
+    try { ks.getKey(alias, keyPass.toCharArray()) } catch (Exception e) { throw new GradleException("${propsName}: keyPassword does not unlock alias ${alias} in ${store} (${e.message}).") }
+    return true
+}
+tasks.register("verifyKeystore") {
+    group = "verification"; description = "Open the keystore named by -PclknKeystore (default keystore.properties) with the password Gradle reads from it; prints MATCH."
+    doLast {
+        if (!keystorePropertiesFile.exists()) throw new GradleException("android/${clknKeystoreName} does not exist.")
+        def storeName = keystoreProperties['storeFile']; def storeAt = storeName ? file(storeName) : null
+        if (!storeAt || !storeAt.exists()) throw new GradleException("${clknKeystoreName} names storeFile=${storeName} → ${storeAt}, which does not exist (storeFile is relative to android/app/).")
+        clknVerifyKeystore(keystoreProperties, storeAt, clknKeystoreName)
+        println "MATCH — ${clknKeystoreName} opens ${storeAt} (alias ${keystoreProperties['keyAlias']})"
     }
 }
 
