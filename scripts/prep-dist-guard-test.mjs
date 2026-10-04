@@ -318,10 +318,17 @@ await runDev({ ...PLAY,
   // live listing (update path). Both ids must be present in that one expression and nowhere else
   // in the block.
   const capSeeker = /appId:\s*process\.env\.CLKN_SEEKER_UPDATE\s*===\s*'1'\s*\?\s*'app\.clucknorris\.school'\s*:\s*'app\.clucknorris\.seeker'/.test(capBlock);
-  const ownId = rel.includes("-PclknAppId=app.clucknorris.seeker ") && !rel.includes("app.clucknorris.school") && !rel.includes("CLKN_SEEKER_UPDATE");
+  // ⚠️ Codex on e5fbefb (P2): an INHERITED CLKN_SEEKER_UPDATE=1 in the shell would have made the
+  // default build pick the live id in Capacitor while Gradle built the new id with the new key —
+  // the two identities mixed. So the default release AND the dev build set the flag to 0 explicitly,
+  // and this pin requires that rather than "does not mention the flag".
+  const ownId = rel.includes("-PclknAppId=app.clucknorris.seeker ") && !rel.includes("app.clucknorris.school") && rel.includes("CLKN_SEEKER_UPDATE=0 ") && !rel.includes("CLKN_SEEKER_UPDATE=1");
+  const devResets = String(pkg.scripts["build:seeker-dev"] || "").includes("CLKN_SEEKER_UPDATE=0 ");
+  if (!devResets) failures++;
+  console.log(`  ${devResets ? "✓" : "✗"} build:seeker-dev also resets CLKN_SEEKER_UPDATE=0 (an inherited flag cannot reach it)`);
   const ownKey = rel.includes("-PclknKeystore=keystore.seeker.properties");
   if (!(capSeeker && ownId)) failures++;
-  console.log(`  ${capSeeker && ownId ? "✓" : "✗"} the Seeker target is app.clucknorris.seeker by default in BOTH capacitor.config.ts and build:seeker (the live id only behind CLKN_SEEKER_UPDATE=1)`);
+  console.log(`  ${capSeeker && ownId ? "✓" : "✗"} the Seeker target is app.clucknorris.seeker by default in BOTH capacitor.config.ts and build:seeker, which resets CLKN_SEEKER_UPDATE=0 (the live id only behind =1)`);
   if (!ownKey) failures++;
   console.log(`  ${ownKey ? "✓" : "✗"} build:seeker signs with its own keystore.seeker.properties, not the live listing's default keystore.properties`);
   // The UPDATE path (only if the original key is found): live id + the ORIGINAL keystore.properties

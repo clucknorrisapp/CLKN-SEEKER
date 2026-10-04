@@ -119,15 +119,19 @@ Any candidate: `keytool -list -v -keystore <file> | grep SHA256` must print
 `read -rs`, nothing in history) and run:
 
 ```bash
+rm -f cluck-norris-seeker-*.apk   # no stale APK from an earlier run can be handed over by mistake (Codex on e5fbefb, P2)
 npm run build:seeker-update       # app.clucknorris.school, versionCode 10 / 2.0.0, the ORIGINAL key
 "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs android/app/build/outputs/apk/release/app-release.apk | grep SHA-256   # must be 7a955fa4…
 "$ANDROID_HOME"/build-tools/*/aapt dump badging android/app/build/outputs/apk/release/app-release.apk | head -1
 #   expect: package: name='app.clucknorris.school' versionCode='10' versionName='2.0.0'
+cp android/app/build/outputs/apk/release/app-release.apk cluck-norris-seeker-2.0.0.apk   # THE file for §3, §6 and §7 on this path
 adb install -r cluck-norris-seeker-2.0.0.apk   # installs OVER the live 1.0; INSTALL_FAILED_UPDATE_INCOMPATIBLE = wrong key, stop
 ```
 
-Then §4 onward as written (logcat pidof `app.clucknorris.school`), and in §7 the portal step is
-the EXISTING "Cluck Norris" app → **New Version** → upload → Submit; no New dApp form, and the
+Then §4 onward as written (logcat pidof `app.clucknorris.school`), §6 hands over
+`cluck-norris-seeker-2.0.0.apk` (the only APK in the folder after the `rm -f` above), and in §7
+the portal step is the EXISTING "Cluck Norris" app → **New Version** → upload → Submit; no New
+dApp form, and the
 saved `app.clucknorris.seeker` draft is simply never submitted.
 
 **Not found → §2 below, unchanged.** Do not spend the day on it: the search above is the whole
@@ -152,8 +156,15 @@ keytool -genkeypair -v -keystore clkn-seeker.jks -alias clkn-seeker -keyalg RSA 
 #    written by the shell, not pasted. storeFile is RELATIVE TO android/app/ (Gradle's
 #    `file()` in app/build.gradle resolves it from the app module — Codex on 059d26f, P2), hence `../`.
 read -rs 'PW?keystore password: '; echo
-umask 077 && printf 'storeFile=../clkn-seeker.jks\nstorePassword=%s\nkeyAlias=clkn-seeker\nkeyPassword=%s\n' "$PW" "$PW" > keystore.seeker.properties
-unset PW
+#    ⚠️ Codex on e5fbefb, P2: this is a JAVA PROPERTIES file, where a backslash is an escape (`\q`
+#    reads back as `q`), so a password with a backslash in it would reach keytool intact and Gradle
+#    broken. Backslashes are doubled before writing; everything else is written as typed.
+PWE=${PW//\\/\\\\}
+umask 077 && printf 'storeFile=../clkn-seeker.jks\nstorePassword=%s\nkeyAlias=clkn-seeker\nkeyPassword=%s\n' "$PWE" "$PWE" > keystore.seeker.properties
+unset PW PWE
+#    Prove Gradle will read back the password you typed (prints MATCH, nothing else):
+#    (-storepass:env reads it from the environment of this one command — never a command-line argument)
+KSP="$(sed -n 's/^storePassword=//p' keystore.seeker.properties | sed 's/\\\\/\\/g')" keytool -list -keystore clkn-seeker.jks -storepass:env KSP >/dev/null 2>&1 && echo MATCH || echo "MISMATCH — the properties file does not open the keystore; redo step 3"
 # 4. Prove the three things that matter before building anything.
 ls -l clkn-seeker.jks keystore.seeker.properties   # both exist, properties is -rw-------
 ls -l app/../clkn-seeker.jks                        # the storeFile path resolves from app/
@@ -168,15 +179,15 @@ Then attach `clkn-seeker.jks` to the same password-manager entry (file attachmen
 
 ```bash
 cd ~/CLKN-SEEKER
+rm -f cluck-norris-seeker-*.apk   # never hand over a stale APK from an earlier run
 npm run build:seeker
 # → android/app/build/outputs/apk/release/app-release.apk
 "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs android/app/build/outputs/apk/release/app-release.apk
 #   the SHA-256 printed here must equal the keytool line from 2a
 "$ANDROID_HOME"/build-tools/*/aapt dump badging android/app/build/outputs/apk/release/app-release.apk | head -1
 #   expect: package: name='app.clucknorris.seeker' versionCode='1' versionName='1.0.1'
+cp android/app/build/outputs/apk/release/app-release.apk cluck-norris-seeker-1.0.1.apk   # THE file for §3, §6 and §7 on this path
 ```
-
-Copy it out with a name that reads on its own: `cluck-norris-seeker-1.0.1.apk`.
 
 ## 3. Install beside the live app
 
@@ -238,9 +249,14 @@ Upload the final cut to YouTube as **Unlisted**; the link goes in the submission
 
 ## 6. Hand the APK over
 
-Attach `cluck-norris-seeker-1.0.1.apk` to a GitHub release (the browser's "Attach binaries"
-drop zone on the release page) — that asset URL is the "direct download link" the submission
-asks for. Tell the cloud session the URL; it updates the submission text and the README.
+Attach **the one `cluck-norris-seeker-*.apk` in the repo folder** — `cluck-norris-seeker-2.0.0.apk`
+on the update path (§2.0 found the key), `cluck-norris-seeker-1.0.1.apk` on the new-listing path —
+to a GitHub release (the browser's "Attach binaries" drop zone on the release page); that asset
+URL is the "direct download link" the submission asks for. `ls cluck-norris-seeker-*.apk` must
+list exactly one file; the `rm -f` before each build is what guarantees it. Before attaching,
+`apksigner verify --print-certs` on that file once more and read the package name off `aapt dump
+badging` — the file you hand over is the file you verified. Tell the cloud session the URL; it
+updates the submission text and the README.
 
 ## 7. Publish the new listing (only on the owner's word — not a hackathon requirement)
 
